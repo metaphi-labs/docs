@@ -66,7 +66,7 @@ env_pass = []
 
 ## Hosts
 
-With `allow_hosts` set and `network = false`, commands reach those hosts and no others. Hum runs one proxy on this machine for the session and hands its address to every command in `HTTP_PROXY`, `HTTPS_PROXY` and `ALL_PROXY`; git, pip, npm, curl and most tools honour them. HTTPS is tunnelled; Hum sees the host name and never the bytes. `example.com` names that host alone, `*.example.com` names every host below it. A host that is not on the list gets a 403 that names the list, the model reads it, the session shows `network: <host> refused`, and a `network_refused` event goes on the transcript. `web_fetch` and the tool servers you configure are held to the same list. A tool that ignores proxy variables still has no network. `network = true` opens everything and the list is not used.
+With `allow_hosts` set and `network = false`, commands reach those hosts and no others. Humboldt runs one proxy on this machine for the session and hands its address to every command in `HTTP_PROXY`, `HTTPS_PROXY` and `ALL_PROXY`; git, pip, npm, curl and most tools honour them. HTTPS is tunnelled; Humboldt sees the host name and never the bytes. `example.com` names that host alone, `*.example.com` names every host below it. A host that is not on the list gets a 403 that names the list, the model reads it, the session shows `network: <host> refused`, and a `network_refused` event goes on the transcript. `web_fetch` and the tool servers you configure are held to the same list. A tool that ignores proxy variables still has no network. `network = true` opens everything and the list is not used.
 
 `HUM_SANDBOX=off` for one run. Even off, file tools never write `.hum/`, `.claude/` or `.codex/`.
 

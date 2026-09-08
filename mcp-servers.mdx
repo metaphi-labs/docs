@@ -1,13 +1,13 @@
 ---
 title: "MCP servers"
-description: "Tool servers give Hum abilities beyond the machine. The ones your account comes with connect at sign-in. Add your own in a few lines."
+description: "Tool servers give Humboldt abilities beyond the machine. The ones your account comes with connect at sign-in. Add your own in a few lines."
 ---
 
 ## Included with your account
 
 Servers your account is granted connect when you sign in and at the start of every session. Nothing to configure. A server granted later appears the next time you start `hum`.
 
-Every account has `docs`: Hum's own documentation as a tool server. Ask Hum what it can do or how a setting works and it reads the page before answering. For a reader outside a session the same pages are an index at [/llms.txt](/llms.txt) and markdown at `/docs/<page>.md`.
+Every account has `docs`: Humboldt's own documentation as a tool server. Ask Humboldt what it can do or how a setting works and it reads the page before answering. For a reader outside a session the same pages are an index at [/llms.txt](/llms.txt) and markdown at `/docs/<page>.md`.
 
 ```
 /mcp              # every server: what mounted, and what did not, with the reason
@@ -41,7 +41,7 @@ Each `[[mcp]]` table mounts into every session. `/mcp` shows whether it mounted.
 
 ## What a server gets
 
-- A server that asks for a file or a directory as base64 gets it from Hum. The model names a path under the working directory; Hum packs and encodes it.
+- A server that asks for a file or a directory as base64 gets it from Humboldt. The model names a path under the working directory; Humboldt packs and encodes it.
 - A server runs with the reach of its own process. The sandbox does not extend to it.
 - An image a server returns (a screenshot, a rendered page) reaches the model as a picture and stays with the session, like one you paste.
 - Credential-like variables (`*KEY*`, `*PASSWORD*`, `*SECRET*`, `*TOKEN*`, `*CREDENTIAL*`, `HUM_*`) are stripped from a server's environment. Pass the ones it needs:
