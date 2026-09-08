@@ -1,0 +1,90 @@
+---
+title: "Configuration"
+description: "Nothing is required. `~/.hum/config.toml` is yours; `<repo>/.hum/config.toml` is the project's."
+---
+
+## config.toml
+
+```toml
+[model]
+name = "kimi-k3"             # a route from /model, or provider/model
+# reasoning_effort = "high"  # low | medium | high; the server sends high unless you set this
+# agents = "..."             # route for sub-agents
+# api_base = "https://..."   # any OpenAI-compatible endpoint; with api_key_env, context_window
+
+[[mcp]]
+name = "jira"
+url = "https://.../mcp"      # or command = "npx", args = ["jira-mcp"]
+
+[plugins]
+enabled = ["pyright-lsp@metaphi"]   # or `hum plugin install`; see /docs/plugins
+disabled = []
+dirs = []                           # a plugin under development, loaded as it sits
+
+[[lsp]]
+name = "cobol"                      # a language server outside any plugin
+command = "cobol-language-support"
+args = ["--stdio"]
+extensions = [".cbl", ".cpy"]
+
+[policy]
+gate = "off"                 # off | approve
+compact_at_tokens = 200000
+
+[permissions]
+allow = []
+ask = []
+deny = []
+
+[hooks]
+enabled = true
+foreign = true               # run Claude Code and Codex hook files
+
+[sandbox]
+mode = "workspace"           # workspace | required | off
+network = false
+allow_hosts = []             # hosts commands may reach while network is off; *.example.com for a domain
+writable = []
+env_pass = []
+
+[sync]
+world = true                 # send the working tree's history with each turn
+
+[session]
+delivery_question = true     # ask whether you would merge an exchange that wrote files
+
+[ui]
+reasoning = true             # stream the model's thinking
+
+[notify]
+desktop = true
+```
+
+## Files
+
+| Path | Holds |
+| --- | --- |
+| `~/.hum/config.toml` | Your settings |
+| `<repo>/.hum/config.toml` | Project settings and rules |
+| `~/.hum/hooks.json`, `<repo>/.hum/hooks.json` | Hooks |
+| `~/.hum/skills/`, `.agents/skills/`, `.claude/skills/` | Skills |
+| `~/.hum/agents/`, `.hum/agents/` | Sub-agent files |
+| `~/.hum/plugins/`, `<repo>/.hum/plugins.json` | Plugins installed; the project's enabled set |
+| `~/.hum/credentials.json` | Sign-in |
+| `~/.hum/calls/` | Model calls on your own host |
+| `~/.hum/blobs/` | Images |
+| `<repo>/.hum/tool-output/` | Long tool output; swept after a week |
+
+## Environment variables
+
+| Variable | Effect |
+| --- | --- |
+| `HUM_PLAIN=1` | Text client without Node |
+| `HUM_SANDBOX=off` | Sandbox off for one run |
+| `HUM_ENV_PASS=A,B` | Pass variables to commands for one run |
+| `HUM_HOOKS=0` | Hooks off for one run |
+| `HUM_DELIVERY_QUESTION=0` | No delivery question for one run |
+| `HUM_NOTIFY=0` | No desktop notifications |
+| `HUM_NO_AUTO_UPDATE=1` | Notify, do not download |
+| `HUM_NO_UPDATE_CHECK=1` | No update box |
+| `HUM_NO_AUTO_LOGIN=1` | First run does not sign in |

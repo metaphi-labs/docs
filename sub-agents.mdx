@@ -1,0 +1,45 @@
+---
+title: "Sub-agents"
+description: "Hum delegates self-contained work to sub-agents that run beside the session on the same workspace. Define your own in `.hum/agents/`."
+---
+
+## Built in
+
+| Kind | Tools |
+| --- | --- |
+| `explore` | Read-only: find things out |
+| `general` | Everything: an independent piece of work, edits included |
+
+The model chooses when to delegate. Several run at once, up to five. A sub-agent never asks you anything.
+
+## Your own
+
+One markdown file per agent under `.hum/agents/`, scanned recursively. Files in `.claude/agents/` and `.codex/agents/` are read the same way, and `~/.hum/agents/` holds your personal ones. The nearest file wins a name.
+
+```markdown
+---
+name: code-reviewer
+description: Reviews a change for correctness and style. Use after edits.
+tools: read_file, grep, glob
+maxTurns: 12
+---
+You are a reviewer. Report findings with file and line. Never edit.
+```
+
+| Field | Meaning |
+| --- | --- |
+| `name` | The kind the model delegates to. Defaults to the file name |
+| `description` | When to use it. The model reads this to choose |
+| `tools` | Allowlist: `read_file`, `write_file`, `edit_file`, `shell`, `grep`, `glob`, `web_fetch`, `web_search`. Claude Code's names are accepted |
+| `disallowedTools` | Denylist |
+| `maxTurns` | Ceiling for one run |
+| `model` | Recorded, not acted on. Every sub-agent runs on the route below |
+
+The body is the agent's role, given to it whole. An agent whose tools can edit is refused while approvals are on.
+
+```toml
+[model]
+agents = "deepseek-v4-flash"     # the route every sub-agent runs on; unset = the session's model
+```
+
+Every sub-agent run is on the session transcript, with the file that defined it.

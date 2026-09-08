@@ -1,0 +1,45 @@
+---
+title: "Models and credits"
+---
+
+## Routed models
+
+Signing in gives you a key on Metaphi AI's model proxy.
+
+```
+/model            # list, cheapest first; a number switches
+/model <name>
+/cost             # tokens and dollars this session
+```
+
+## Credits
+
+```
+/usage-credits            # balance and the page that adds more
+hum credits <code>        # redeem a code
+```
+
+When credits run out, Hum opens the credits page.
+
+## Your own host
+
+Any OpenAI-compatible endpoint. Sessions on it call the host directly; every model call is kept under `~/.hum/calls/`.
+
+```toml
+[model]
+name = "my-model"
+api_base = "https://llm.example.com/v1"
+api_key_env = "MY_KEY"
+context_window = 200000
+```
+
+```bash
+hum whoami        # signed in? whose model?
+```
+
+## Sub-agents
+
+```toml
+[model]
+agents = "deepseek-v4-flash"     # a cheaper route for sub-agents
+```

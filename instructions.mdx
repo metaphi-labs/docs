@@ -1,0 +1,59 @@
+---
+title: "Project instructions"
+description: "Tell Hum how this repository works in an `AGENTS.md` at the repository root. Hum reads it at the start of every session."
+---
+
+## One file: AGENTS.md
+
+```
+repo/
+  AGENTS.md
+```
+
+Write what a new engineer needs on day one: build and test commands, conventions, where things live, how work is delivered, what to avoid. Plain markdown. Hum reads it whole and never changes it on its own.
+
+`CLAUDE.md` and `README.md` at the same level are read too. When more than one is present, `AGENTS.md` has the last word.
+
+## Instructions for one folder
+
+Put an `AGENTS.md` inside the folder. Hum reads it the first time it reads or edits a file in that folder or beneath it.
+
+```
+repo/
+  AGENTS.md                 # read at session start
+  batch/
+    AGENTS.md               # read when Hum first works in batch/
+  online/
+    AGENTS.md               # read when Hum first works in online/
+```
+
+Both files apply once read; the folder's file is read last. After a compaction, a folder's file comes back with the next read there.
+
+## Linking your documentation
+
+Keep `AGENTS.md` as the entry point and name your documents in it: a design document, standards, test data, the delivery process. Hum reads a named file when the work calls for it.
+
+```markdown
+# AGENTS.md
+- Coding standards: docs/standards.md
+- Test data and how to regenerate it: tests/README.md
+- Delivery: every accepted change is pushed to `development`; see docs/delivery.md
+```
+
+A folder of markdown files on its own, such as `agents/*.md` or `rules/*.md`, is not read. Name the files in `AGENTS.md`, or put the folder-specific ones in that folder's `AGENTS.md`.
+
+## Let Hum write it
+
+```bash
+hum "write an AGENTS.md for this repository"
+```
+
+Hum reads the repository and drafts the file. Review it, change what you want, commit it. It applies from the next session.
+
+## Where Hum starts
+
+Hum reads instruction files from the directory you start `hum` in, and every parent up to the repository root. Start `hum` at the root to have the root file apply everywhere. Nothing above the repository root, or in your home directory, is read.
+
+## MCP servers
+
+Tool servers are configured in `~/.hum/config.toml`, separately from instructions. See [MCP servers](/mcp-servers).

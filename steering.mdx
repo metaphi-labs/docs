@@ -1,0 +1,57 @@
+---
+title: "Steer the work"
+---
+
+## While it works
+
+| Do | Effect |
+| --- | --- |
+| Type | Your words reach the model on its next step |
+| `esc` | Stop the turn, keep the work |
+| `!cmd` | Run a shell command yourself |
+| Edit in your editor | Recorded as your turn. A tool never overwrites a file it has not re-read |
+
+## See what changed
+
+```
+/diff             # since the session began
+/diff last        # the last exchange
+/diff <path>      # one file
+```
+
+## Go back
+
+```
+/rewind           # or esc esc while idle
+```
+
+Pick a point you said something. Restore the files, the conversation, or both. Nothing is deleted; the session continues on a new branch.
+
+## Set a goal
+
+```
+/goal migrate every caller of the old clearing layout and make the nightly chain pass
+/goal             # where it stands
+/goal pause
+/goal resume
+/goal clear
+```
+
+A goal is an objective the session keeps working toward on its own. While it is active, each time an exchange ends Hum starts the next one itself, so you can set a goal and walk away. It ends when the model marks it complete, after proving every requirement against the workspace, or blocked, after the same blocker has held for three exchanges in a row. Hum also stops it on its own: three exchanges that produce no working tool result mark it blocked, a spent credit balance marks it usage limited, and an error the model cannot fix marks it blocked. `/goal resume` picks a paused, blocked or usage-limited goal up again; `/goal <objective>` replaces the goal there is.
+
+The objective rides every prompt, survives compaction and resume, and shows on the status line as `◎ goal active`. When nobody is attached and a goal stops, the OS is told, and `hum agents` says which session needs you. The model reads the goal with `get_goal` and marks it with `update_goal`; it cannot pause, resume or clear it.
+
+## Images
+
+| Do | Effect |
+| --- | --- |
+| `ctrl+v` | Paste a screenshot |
+| `@shot.png` | Attach a file from a message |
+| `/image <path>` | Attach to the next message |
+| `hum "task" --image shot.png` | Start with one |
+
+PNG, JPEG, GIF, WebP, up to 5 MB.
+
+## Documents
+
+`read_file` reads PDF, Word, Excel and PowerPoint as text. PDFs page by page, workbooks by tab. Scanned pages go to the model as images on a model that reads them.

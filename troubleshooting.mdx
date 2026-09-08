@@ -1,0 +1,61 @@
+---
+title: "Troubleshooting"
+description: "Start with `hum doctor`. It checks the install, the launcher, PATH, the sandbox and the sign-in without starting a session. `hum doctor --json` for a support thread."
+---
+
+## Install
+
+| Symptom | Fix |
+| --- | --- |
+| `command not found: hum` after the native install | `export PATH="$HOME/.local/bin:$PATH"`, or open a new terminal |
+| Intel Mac: "no native build" | `npm install -g @metaphi-ai/hum` or `uv tool install hum-cli` |
+| Managed Windows machine refuses the executable | `npm install -g @metaphi-ai/hum`. Everything runs on the Node and Python already on the machine |
+| Windows: OpenSSL will not load | `hum doctor` names the fix: the engine moves to the Python the machine trusts (`py -3.12`) |
+| More than one `hum` on PATH | `hum doctor` lists them. Remove the ones you did not mean to keep, e.g. `uv tool uninstall hum-cli` |
+| No Node on the machine | `hum --plain` or `HUM_PLAIN=1` uses the text client |
+
+## Update
+
+```bash
+hum update                          # native
+npm update -g @metaphi-ai/hum       # npm
+uv tool upgrade hum-cli             # uv
+```
+
+`HUM_NO_AUTO_UPDATE=1` keeps the notice and stops the background download.
+
+## Uninstall
+
+```bash
+rm -rf ~/.local/share/hum ~/.local/bin/hum     # native (macOS, Linux)
+npm uninstall -g @metaphi-ai/hum               # npm
+uv tool uninstall hum-cli                      # uv
+rm -rf ~/.hum                                  # sign-in, keys, settings, local transcripts
+```
+
+## Sign-in and credits
+
+| Symptom | Fix |
+| --- | --- |
+| The browser did not open at `hum login` | Open the URL the terminal prints and confirm the code shown |
+| "out of credits" | `/usage-credits` opens the page that adds more |
+| Which model and host is this session on? | `hum whoami` |
+
+## Sandbox
+
+| Symptom | Fix |
+| --- | --- |
+| `git push`, `pip install` or a network call hangs or fails | The sandbox blocks the network. Name the hosts under `[sandbox] allow_hosts`, approve at the panel, or set `network = true` |
+| `network: <host> refused` | The host is not under `[sandbox] allow_hosts`; add it, or its domain as `*.example.com` |
+| Linux: `/tools` says `sandbox: none` | `sudo apt install bubblewrap`. If user namespaces are restricted, `hum doctor` says what to set |
+| A tool cannot write where it needs to | Add the root under `[sandbox] writable`, or `HUM_SANDBOX=off` for one run |
+| A command lost an environment variable | Credential-like names are stripped. `[sandbox] env_pass = ["NAME"]` |
+
+## Sessions
+
+| Symptom | Fix |
+| --- | --- |
+| Closed the terminal; where is the session? | `hum resume`. It kept running; an idle one closes after an hour and resumes from the transcript |
+| A tool server did not mount | `/mcp` shows the reason |
+| Hum did not follow the project's `AGENTS.md` | Start `hum` in the repository. Files above the repository root are never read. See [Project instructions](/instructions) |
+| A hook is not firing | `hum hooks` lists what would fire here and where it came from |

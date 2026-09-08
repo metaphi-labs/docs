@@ -1,0 +1,77 @@
+---
+title: "Language servers"
+description: "Hum reads the code the way the compiler does when a language server is there: where a symbol is defined, who references it, what a name is, what the parser complains about."
+---
+
+## What the model gets
+
+| Tool | Answers |
+| --- | --- |
+| `definition` | Where the symbol at a position is defined |
+| `references` | Every reference to it, declaration included |
+| `hover` | Its type and documentation |
+| `symbols` | The symbols in one file, or one name across the workspace |
+| `diagnostics` | The errors and warnings for a file |
+
+After every `write_file` and `edit_file`, the file's diagnostics end the result, so the model reads the error before it runs anything.
+
+## Install one
+
+A language server comes from a [plugin](/plugins). The official marketplace carries one per language; install the server binary yourself, then the plugin.
+
+```bash
+npm i -g pyright
+hum plugin marketplace add metaphi-labs/plugins
+hum plugin install pyright-lsp@metaphi
+```
+
+| Plugin | Files | Binary |
+| --- | --- | --- |
+| `che4z-cobol-lsp` | `.cbl` `.cob` `.cpy` | Broadcom's COBOL Language Support engine, fetched by the plugin's `bin/che4z-install` |
+| `cobol-lsp` | `.cbl` `.cob` `.cpy` | none: a single Python file, for a machine that cannot run the engine |
+| `pyright-lsp` | `.py` | `pyright-langserver` |
+| `typescript-lsp` | `.ts` `.tsx` `.js` `.jsx` | `typescript-language-server` |
+| `gopls-lsp` | `.go` | `gopls` |
+| `rust-analyzer-lsp` | `.rs` | `rust-analyzer` |
+| `clangd-lsp` | `.c` `.cc` `.cpp` `.h` | `clangd` |
+| `jdtls-lsp` | `.java` | `jdtls` |
+| `csharp-lsp` | `.cs` | `csharp-ls` |
+| `kotlin-lsp` | `.kt` | `kotlin-language-server` |
+| `swift-lsp` | `.swift` | `sourcekit-lsp` |
+| `php-lsp` | `.php` | `intelephense` |
+| `lua-lsp` | `.lua` | `lua-language-server` |
+
+When one of those binaries is on PATH and the working directory holds its language, Hum says so once at the start of a session, with the install command. Nothing starts until you install the plugin.
+
+## Your own
+
+```toml
+# ~/.hum/config.toml or <repo>/.hum/config.toml
+[[lsp]]
+name = "cobol"
+command = "cobol-language-support"
+args = ["--stdio"]
+extensions = [".cbl", ".cpy"]
+```
+
+Or in a plugin's `.lsp.json`, with the server's own options:
+
+```json
+{"cobol": {"command": "cobol-language-support", "args": ["--stdio"],
+           "extensionToLanguage": {".cbl": "cobol", ".cpy": "cobol"},
+           "initializationOptions": {"copybookPaths": ["Copybooks"]}, "settings": {}, "diagnostics": true}}
+```
+
+`settings` answers the server's `workspace/configuration` requests section by section and is sent once as `workspace/didChangeConfiguration`; `initializationOptions` rides on `initialize`. `diagnostics = false` keeps navigation and stops the lines after every write.
+
+## Behaviour
+
+- A server starts on the first question about one of its files, in the working directory, and stops with the session.
+- It runs with the reach of its own process. The sandbox does not extend to it.
+- Every call is on the session transcript. `meta.lsp` lists the servers, the plugin each came from, and the files they served.
+- A server that is missing, dies or does not answer says so on the tool result. The session goes on.
+- Sub-agents and unattended Harbor runs do not get these tools.
+
+```
+/tools            # the servers beside the tool servers
+```

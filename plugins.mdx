@@ -1,0 +1,72 @@
+---
+title: "Plugins"
+description: "A plugin is a directory that bundles skills, agents, hooks, tool servers and language servers. Hum reads the layout Claude Code's plugins use, unchanged, so a plugin written for either works in both."
+---
+
+## Install
+
+```bash
+hum plugin marketplace add metaphi-labs/plugins     # the official marketplace, once
+hum plugin install pyright-lsp@metaphi              # asks, then fetches and turns it on
+hum plugin list
+```
+
+| Command | Description |
+| --- | --- |
+| `hum plugin install <name>@<marketplace>` | Fetch and enable. `--scope project` enables it for everyone in this repository; `-y` skips the question |
+| `hum plugin enable`, `disable`, `uninstall` | By `name@marketplace`; `--scope project` writes the project's file |
+| `hum plugin list` | What is installed, on or off, and any part that could not be read |
+| `hum plugin marketplace add <source>` | `owner/repo` on GitHub, a git URL, or a directory |
+| `hum plugin marketplace update [name]` | Fetch a marketplace again |
+| `hum plugin marketplace remove <name>` | Drop it and every plugin installed from it |
+
+Install asks first: a plugin's hooks, tool servers and language servers run commands on this machine as you.
+
+## What a plugin holds
+
+```
+my-plugin/
+  .claude-plugin/plugin.json   name, version, description
+  skills/<name>/SKILL.md       skills
+  agents/*.md                  sub-agents
+  hooks/hooks.json             hooks
+  .mcp.json                    tool servers
+  .lsp.json                    language servers
+```
+
+`${CLAUDE_PLUGIN_ROOT}` in any of those files is the plugin's own directory. A plugin's skill or agent sits under your own: your file wins a name, the project's wins both. A plugin's tool server with the same name as one in your config is not mounted.
+
+## Where things live
+
+| Path | Holds |
+| --- | --- |
+| `~/.hum/plugins/plugins.json` | Marketplaces added, plugins installed, your enabled set |
+| `~/.hum/plugins/installed/<marketplace>/<plugin>/` | The plugin's files, copied at install with the marketplace's commit |
+| `<repo>/.hum/plugins.json` | `{"enabled": {"name@marketplace": true}}`, for everyone who works here |
+
+```toml
+# ~/.hum/config.toml or <repo>/.hum/config.toml: the same in TOML, plus a plugin under development
+[plugins]
+enabled = ["reviewer@metaphi"]
+disabled = []
+dirs = ["../my-plugin"]        # loaded as it sits, no install
+```
+
+Every enabled plugin is on the session transcript: name, marketplace, version, commit, and what it brought.
+
+## A marketplace
+
+A git repository or a directory with `.claude-plugin/marketplace.json`:
+
+```json
+{"name": "acme", "plugins": [
+  {"name": "reviewer", "source": "./plugins/reviewer", "version": "0.3.0", "description": "How we review"},
+  {"name": "tickets", "source": {"type": "github", "owner": "acme", "repo": "tickets-plugin", "ref": "v1"}}
+]}
+```
+
+A source is a path inside the marketplace, or a `github` or `git` repository with an optional `path` and `ref`.
+
+## Write one
+
+Put the parts in the layout above and add the directory to `[plugins] dirs` while you work on it. When it is ready, put it in a marketplace repository and add an entry. See [Skills](/skills), [Sub-agents](/sub-agents), [Hooks](/hooks), [MCP servers](/mcp-servers), [Language servers](/language-servers).

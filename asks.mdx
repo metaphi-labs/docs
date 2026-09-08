@@ -1,0 +1,27 @@
+---
+title: "When it asks you"
+---
+
+## Questions
+
+When a decision is yours (which config, a name with consequences, a step it cannot undo), Hum asks: the question, options, and the default it would take. Up to four questions per ask.
+
+| Do | Effect |
+| --- | --- |
+| Number | Pick an option |
+| Type | Answer in your words |
+| `enter` | Take the default |
+
+Away from the terminal it takes the default and continues. The question waits on the transcript; your later answer reaches it as a message. A question with no default waits for you.
+
+Sub-agents never ask.
+
+## Feedback
+
+When it wants your judgment rather than a decision, it shows what it did, where the proof is, and what to rate. Mark each item (yes/no or 1 to 5) and add a line if you want.
+
+It never waits on you. The checkpoint goes on the transcript, the model carries on, and your judgment reaches it as a message whenever you give it. The same holds for a decision it puts to you with its own pick sealed.
+
+## Approvals
+
+Leaving the sandbox always asks. See [Sandbox and approvals](/sandbox).

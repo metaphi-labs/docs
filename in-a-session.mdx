@@ -1,0 +1,63 @@
+---
+title: "In a session"
+description: "`/help` shows this list in the terminal."
+---
+
+## Slash commands
+
+| Command | Description |
+| --- | --- |
+| `/diff`, `/diff last`, `/diff <path>` | Changes since the session began, the last exchange, or one file |
+| `/rewind` | Restore files, conversation, or both, to an earlier point |
+| `/accept [<why>]`, `/reject [<why>]` | Your word on the work as it stands, recorded against the state it is in |
+| `/goal <objective>`, `/goal pause`, `/goal resume`, `/goal clear` | The goal it keeps working toward on its own; `/goal` alone shows where it stands |
+| `/compact [<what to keep>]` | Summarise and restart the context |
+| `/model [<name>]` | List or switch models |
+| `/reasoning [<level>]` | How hard the model thinks, whatever the model: low, medium, high. Enter keeps it for new sessions, `s` for this one |
+| `/cost` | Tokens and cost so far |
+| `/usage-credits` | Balance and the credits page |
+| `/approve` | Toggle: every change waits for you |
+| `/continue` | Carry on after a pause |
+| `/image <path>` | Attach an image to the next message |
+| `/mcp` | MCP servers and what mounted |
+| `/tools` | Tools and the sandbox they run in |
+| `/hooks` | Hooks in scope |
+| `/permissions` | Rules in force |
+| `/resume` | Switch to another session |
+| `/help` | This list |
+| `/quit` | Leave; the session keeps running |
+| `/stop` | End the session |
+
+## Keys
+
+| Key | Description |
+| --- | --- |
+| Type | Steer the model mid-turn |
+| `!cmd` | Run a shell command yourself |
+| `esc` | Stop the turn, keep the work |
+| `esc esc` | Rewind picker (while idle) |
+| `ctrl+o` | Full output of the last tool result |
+| `ctrl+v` | Paste a screenshot |
+| `ctrl+c` `ctrl+c` | Leave; the session keeps running |
+
+## Approval panel
+
+| Key | Description |
+| --- | --- |
+| `enter` | Approve once |
+| `a` | Allow this shape for the session |
+| `p` | Write the rule to the project |
+| Type | Refuse with a reason |
+
+## Questions
+
+| Key | Description |
+| --- | --- |
+| Number | Pick an option |
+| Type | Answer |
+| `enter` | Default |
+| Delivery | When an exchange ends having written files, hum asks whether you would merge it as it stands and why; the answer is recorded against that state, and the model is not told you were asked |
+
+## Turn line
+
+After each exchange: time taken, cost, and time to first response.

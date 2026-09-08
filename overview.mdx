@@ -1,0 +1,39 @@
+---
+title: "Overview"
+description: "Hum is a self-improving coding agent for your terminal. Built for long-running async work."
+---
+
+## Install
+
+```bash
+curl -fsSL https://humboldt.metaphi.ai/install.sh | sh   # macOS, Linux
+irm https://humboldt.metaphi.ai/install.ps1 | iex        # Windows
+npm install -g @metaphi-ai/hum                      # any platform
+```
+
+## Start
+
+```bash
+cd your-repo
+hum
+```
+
+The first run signs you in. See the [Quickstart](/quickstart).
+
+## What it does
+
+- Plans, edits files, runs commands in a local sandbox.
+- Keeps working after you close the terminal. `hum resume` brings you back.
+- Asks you when a decision is yours. Away, it takes the default and the question waits.
+- Runs unattended with `hum run "task"`.
+- Reads `AGENTS.md` at the root and in any folder, plus skills, hooks, MCP servers and plugins you already have.
+- Runs on the models we route or on a host you name.
+- Knows its own docs. Ask it what it can do or how a setting works; it reads these pages before answering.
+
+## Next
+
+- [Quickstart](/quickstart)
+- [Sessions](/sessions)
+- [Commands](/commands)
+- [In a session](/in-a-session)
+- [Troubleshooting](/troubleshooting)

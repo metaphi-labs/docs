@@ -1,0 +1,73 @@
+---
+title: "Sandbox and approvals"
+description: "Commands and file edits run in a local sandbox. Leaving it asks first."
+---
+
+## Sandbox
+
+- Writes: only under the working directory, temp and caches.
+- Network: none beyond this machine, or only the hosts you name.
+- Read-only to the agent: `.hum/`, `.claude/`, `.codex/`, `.git/hooks`, `.git/config`.
+
+macOS: Seatbelt. Linux: bubblewrap (`apt install bubblewrap`). Neither: `/tools` shows `sandbox: none`.
+
+On Windows there is no sandbox, so `~/.hum/run/`, which holds the token that opens a running engine's socket, stays readable by anything you can run.
+
+`!cmd` runs as you, unconfined. MCP servers run with their own process's reach.
+
+Credential-like variables (`*KEY*`, `*PASSWORD*`, `*SECRET*`, `*TOKEN*`, `*CREDENTIAL*`, `HUM_*`) are stripped from the model's commands.
+
+```toml
+[sandbox]
+env_pass = ["GITHUB_TOKEN"]     # or HUM_ENV_PASS=A,B for one run
+```
+
+## Approval panel
+
+Shown when a command needs more than the sandbox allows.
+
+| Key | Effect |
+| --- | --- |
+| `enter` | Approve once |
+| `a` | Approve and allow this shape for the session |
+| `p` | Approve and write the rule to the project |
+| Type a reason | Refuse; the model reads it |
+| `esc` | Stop |
+
+`/approve` makes every change wait for you. Leaving the sandbox asks regardless.
+
+## Rules
+
+`~/.hum/config.toml` (yours) or `<repo>/.hum/config.toml` (the project's):
+
+```toml
+[permissions]
+allow = ["bash(git commit:*)"]   # never asks
+ask   = ["bash(git push:*)"]     # always asks; refused unattended
+deny  = ["bash(rm -rf:*)"]       # never runs
+```
+
+Chained commands (`&&`, `;`, `||`, `|`) need every part allowed. Substitutions, redirections and unclosed quotes are asked about.
+
+```
+/permissions          # rules in force and where they came from
+```
+
+## Settings
+
+```toml
+[sandbox]
+mode = "workspace"    # workspace | required | off
+network = false
+allow_hosts = []      # e.g. ["github.com", "*.github.com", "registry.npmjs.org", "pypi.org", "files.pythonhosted.org"]
+writable = ["~/go/pkg"]
+env_pass = []
+```
+
+## Hosts
+
+With `allow_hosts` set and `network = false`, commands reach those hosts and no others. Hum runs one proxy on this machine for the session and hands its address to every command in `HTTP_PROXY`, `HTTPS_PROXY` and `ALL_PROXY`; git, pip, npm, curl and most tools honour them. HTTPS is tunnelled; Hum sees the host name and never the bytes. `example.com` names that host alone, `*.example.com` names every host below it. A host that is not on the list gets a 403 that names the list, the model reads it, the session shows `network: <host> refused`, and a `network_refused` event goes on the transcript. `web_fetch` and the tool servers you configure are held to the same list. A tool that ignores proxy variables still has no network. `network = true` opens everything and the list is not used.
+
+`HUM_SANDBOX=off` for one run. Even off, file tools never write `.hum/`, `.claude/` or `.codex/`.
+
+`mode = "required"` refuses to start a session on a machine with no sandbox. File tools never read through a symlink into what the sandbox hides (`~/.ssh`, `~/.hum/credentials.json`, `~/.hum/run`).

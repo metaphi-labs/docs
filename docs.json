@@ -1,0 +1,117 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "willow",
+  "name": "Humboldt",
+  "description": "Humboldt documentation. Install, run a session, steer the work, build with plugins, tool servers and language servers.",
+  "colors": {
+    "primary": "#0b0b0a",
+    "light": "#f1efe9",
+    "dark": "#0b0b0a"
+  },
+  "logo": {
+    "light": "/logo/humboldt.svg",
+    "dark": "/logo/humboldt.svg",
+    "href": "https://humboldt.metaphi.ai"
+  },
+  "favicon": "/logo/humboldt.svg",
+  "fonts": {
+    "heading": {
+      "family": "Newsreader",
+      "weight": 500
+    },
+    "body": {
+      "family": "Newsreader",
+      "weight": 400
+    }
+  },
+  "appearance": {
+    "default": "system"
+  },
+  "styling": {
+    "codeblocks": "dark",
+    "eyebrows": "section"
+  },
+  "navigation": {
+    "pages": [
+      {
+        "group": "Getting started",
+        "pages": [
+          "overview",
+          "quickstart"
+        ]
+      },
+      {
+        "group": "Use Humboldt",
+        "pages": [
+          "sessions",
+          "steering",
+          "asks",
+          "sandbox",
+          "models"
+        ]
+      },
+      {
+        "group": "Build with Humboldt",
+        "pages": [
+          "instructions",
+          "plugins",
+          "mcp-servers",
+          "language-servers",
+          "agent-teams",
+          "sub-agents",
+          "skills",
+          "hooks",
+          "unattended",
+          "personas"
+        ]
+      },
+      {
+        "group": "Reference",
+        "pages": [
+          "commands",
+          "in-a-session",
+          "configuration",
+          "troubleshooting"
+        ]
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Metaphi AI",
+        "href": "https://metaphi.ai"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Install",
+      "href": "https://humboldt.metaphi.ai/docs/quickstart#1-install"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/metaphi-labs",
+      "website": "https://metaphi.ai"
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "claude",
+      "chatgpt",
+      "cursor",
+      "mcp"
+    ]
+  },
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/overview"
+    }
+  ],
+  "seo": {
+    "indexing": "all"
+  }
+}

@@ -1,0 +1,65 @@
+---
+title: "Commands"
+description: "Bare `hum` opens a session in the current directory."
+---
+
+## Work
+
+| Command | Description |
+| --- | --- |
+| `hum` | New session here |
+| `hum "task"` | New session with a first instruction |
+| `hum run "task"` | Unattended; see [Run unattended](/unattended) |
+| `hum resume [name]` | Continue a session; `--last` skips the picker |
+| `hum update` | Update this install |
+
+Flags: `-C DIR` work elsewhere, `--image PATH` attach an image, `--plain` text client without Node.
+
+## Sessions
+
+| Command | Description |
+| --- | --- |
+| `hum sessions` | List past sessions |
+| `hum show <name>` | Print one |
+| `hum export <name> [-o FILE]` | Write as an ATIF trajectory |
+| `hum sync` | Upload local sessions |
+| `hum ps` | Running sessions on this machine |
+| `hum stop [name]` | End a running session |
+
+## Account
+
+| Command | Description |
+| --- | --- |
+| `hum login` | Sign in |
+| `hum logout` | Sign out |
+| `hum whoami` | Who is signed in, which model |
+| `hum credits [code]` | Balance; redeem a code |
+| `hum model <provider/model>` | Set the model |
+
+## Machine
+
+| Command | Description |
+| --- | --- |
+| `hum doctor [--json]` | Check the install |
+| `hum hooks` | Hooks that would fire here |
+| `hum permissions` | Rules in force here |
+
+## Plugins
+
+| Command | Description |
+| --- | --- |
+| `hum plugin list` | Plugins installed here, on or off |
+| `hum plugin install <name>@<marketplace>` | Fetch and enable; `--scope project` for everyone here |
+| `hum plugin enable`, `disable`, `uninstall` | By `name@marketplace` |
+| `hum plugin marketplace add <owner/repo>` | A catalog of plugins; `update`, `remove`, `list` |
+
+## Skills and personas
+
+| Command | Description |
+| --- | --- |
+| `hum skill eval <name>` | Run a skill's cases |
+| `hum skill propose <name> ...` | Propose a change with evidence |
+| `hum skill apply <name> <proposal>` | Apply; revert on regression |
+| `hum skill standing <name>` | Outcomes and history |
+| `hum persona run <name>` | One simulated session |
+| `hum persona runs <name>` | All simulated sessions |

@@ -1,0 +1,60 @@
+---
+title: "MCP servers"
+description: "Tool servers give Hum abilities beyond the machine. The ones your account comes with connect at sign-in. Add your own in a few lines."
+---
+
+## Included with your account
+
+Servers your account is granted connect when you sign in and at the start of every session. Nothing to configure. A server granted later appears the next time you start `hum`.
+
+Every account has `docs`: Hum's own documentation as a tool server. Ask Hum what it can do or how a setting works and it reads the page before answering. For a reader outside a session the same pages are an index at [/llms.txt](/llms.txt) and markdown at `/docs/<page>.md`.
+
+```
+/mcp              # every server: what mounted, and what did not, with the reason
+/tools            # every tool the model has, and the sandbox it runs in
+```
+
+## Your own
+
+```toml
+# ~/.hum/config.toml
+[[mcp]]
+name = "jira"
+url = "https://.../mcp"
+
+[[mcp]]
+name = "db"
+command = "npx"
+args = ["db-mcp", "--readonly"]
+timeout_s = 900              # seconds one call may take; default 900
+```
+
+Each `[[mcp]]` table mounts into every session. `/mcp` shows whether it mounted.
+
+| Key | Description |
+| --- | --- |
+| `name` | What the server's tools are called by (`name__tool`) |
+| `url` | Streamable-HTTP address |
+| `command`, `args` | Start the server here instead |
+| `headers` | Sent with every HTTP request |
+| `timeout_s` | Seconds one call may take before it fails; default 900 |
+
+## What a server gets
+
+- A server that asks for a file or a directory as base64 gets it from Hum. The model names a path under the working directory; Hum packs and encodes it.
+- A server runs with the reach of its own process. The sandbox does not extend to it.
+- An image a server returns (a screenshot, a rendered page) reaches the model as a picture and stays with the session, like one you paste.
+- Credential-like variables (`*KEY*`, `*PASSWORD*`, `*SECRET*`, `*TOKEN*`, `*CREDENTIAL*`, `HUM_*`) are stripped from a server's environment. Pass the ones it needs:
+
+```toml
+[sandbox]
+env_pass = ["JIRA_TOKEN"]
+```
+
+## Sub-agents
+
+A sub-agent calls the same servers the session has. See [Sub-agents](/sub-agents).
+
+## Language servers
+
+A language server is not a tool server: it answers questions about the code from the files here. See [Language servers](/language-servers).

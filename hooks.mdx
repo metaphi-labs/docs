@@ -1,0 +1,43 @@
+---
+title: "Hooks"
+description: "A command Hum runs at a point in the loop. It can block. Claude Code and Codex hook files run unchanged."
+---
+
+## Events
+
+| Event | Can |
+| --- | --- |
+| `PreToolUse` | Deny the call or rewrite its input |
+| `PostToolUse` | Add to what the model reads |
+| `Stop` | Send the model back with a reason |
+| `UserPromptSubmit` | Act on your message |
+| `SessionStart` | Set up |
+| `Notification` | Reach you: desktop, Slack, mail |
+
+## Files
+
+`~/.hum/hooks.json`, `<repo>/.hum/hooks.json`, `.claude/settings.json`, `.codex/hooks.json`.
+
+```json
+{"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "make test", "timeout": 300}]}],
+           "PreToolUse": [{"matcher": "Bash", "hooks": [{"type": "command", "command": "$HUM_PROJECT_DIR/.hum/no-rm.sh"}]}]}}
+```
+
+## Contract
+
+stdin: one JSON object (`hook_event_name`, `tool_name`, `tool_input`, `tool_response`, `prompt`, `last_message`, `cwd`, `session_id`).
+
+| Exit | Meaning |
+| --- | --- |
+| 0 | Continue. JSON on stdout may set `permissionDecision`, `updatedInput`, `additionalContext`, `continue`, `stopReason` |
+| 2 | Block. stderr is the reason |
+
+```
+hum hooks             # what would fire here; /hooks in a session
+```
+
+```toml
+[hooks]
+enabled = true
+foreign = true        # run Claude Code and Codex hook files too; HUM_HOOKS=0 disables all for one run
+```

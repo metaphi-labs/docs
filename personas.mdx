@@ -1,0 +1,29 @@
+---
+title: "Personas"
+description: "A simulated person at the terminal. It drives a normal session on a scenario, so a harness change is measured before a person meets it."
+---
+
+## Run
+
+```bash
+hum persona run <name> [--scenario <s>] [--model <route>] [--session-model <route>]
+hum persona runs <name>          # every run: verdict, level, cost, session
+```
+
+The run directory keeps the transcript, the persona's verdict, its answers to the scenario's checks, findings about the tool, and the cost to the person (messages, corrections, approvals, waiting, money).
+
+## Files
+
+`personas/<name>/persona.json` in the working directory or `~/.hum/personas/`: `role`, `brief` or `brief_file`, `model`.
+
+Scenarios, one JSON each under `scenarios/`:
+
+| Field | Meaning |
+| --- | --- |
+| `opening` | First message, in the persona's words |
+| `expectations` | What the persona holds the work to. The model never sees it |
+| `world` | Directory copied into the workspace |
+| `checks` | Yes/no questions answered at the end |
+| `max_exchanges`, `max_minutes`, `max_usd` | Ceilings |
+
+Hold the persona and session model fixed across harness versions. The difference is the harness.

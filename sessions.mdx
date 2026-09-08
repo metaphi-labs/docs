@@ -1,0 +1,104 @@
+---
+title: "Sessions"
+description: "A session is its own process. It outlives the terminal."
+---
+
+## Leave and come back
+
+```bash
+hum resume            # picker
+hum resume <name>     # one session
+hum resume --last     # newest
+```
+
+Close the terminal or press `ctrl+c` twice. The session keeps working. An idle session with nobody attached closes after an hour; `hum resume` still reaches it.
+
+Every record on the transcript is on disk before the session goes on. A machine that goes down mid-record leaves a torn last line: `hum resume` drops it, keeps everything before it, and writes the dropped bytes on the transcript.
+
+## Several at once
+
+```bash
+hum ps                # running on this machine
+hum stop <name>       # end one
+hum sessions          # past sessions: when, what, steps, cost
+hum show <name>       # print one
+```
+
+## Agents screen
+
+```bash
+hum agents            # one screen over every session running here
+hum agents --json     # the same rows, once, as JSON
+```
+
+One row per session: its name, its role, its task, its state, what it wants from you, how many steps it has taken and what it has spent, with the last line the model wrote under it. The ones waiting on you sort to the top, then the ones working. The list re-reads itself every two seconds.
+
+| Key | Does |
+| --- | --- |
+| `↑` `↓` | move |
+| `enter` | attach this terminal to that session; `hum agents` comes back |
+| `space` | its open question, answered without attaching, or the tail of its transcript |
+| `s` | end that session |
+| `q` | leave |
+
+Inside a session the status line says ` · N need you` when other sessions here are waiting on you.
+
+## Worktrees
+
+A session can work on a git worktree of its own, so two sessions in one repository never write each other's files.
+
+```bash
+hum --worktree [name]         # a session in .hum/worktrees/<name>, on the branch hum/<name>
+hum "task" --worktree         # the name comes from the task
+hum run "task" --worktree fix
+hum worktrees                 # the ones here: branch, session, last use, uncommitted changes
+hum worktrees prune           # remove the ones that hold nothing
+```
+
+The name defaults to a slug of the task, and a name that already has a worktree is reused. The session reads the repository's own configuration: `.hum/config.toml`, `AGENTS.md`, agent files, hooks and skills all come from the main checkout. Its commands are confined to the worktree, and the shared git directory stays read-only.
+
+Delivery is yours. The session commits on its branch; you merge. `hum worktrees prune` removes a worktree only when it has no uncommitted changes, no running session and no unmerged commits, oldest first. Nothing is ever removed on its own.
+
+## Messages between sessions
+
+```bash
+hum send <name> "the copybook is on branch auth/ddl"
+```
+
+The message lands where yours does: the model reads it at its next step, or it starts an exchange. Both transcripts carry it, joined by one id, and the sender is named as a session.
+
+A message from a session settles nothing: it approves nothing, answers no question and changes no setting. A session that is not running is told about, never queued for.
+
+## Notifications
+
+When nobody is attached, the OS notifies you when a session finishes, pauses or needs you (macOS, Linux with `notify-send`, Windows).
+
+```toml
+[notify]
+desktop = false       # or HUM_NOTIFY=0
+```
+
+Route to Slack or mail with a `Notification` hook. See [Hooks](/hooks).
+
+## Context
+
+Hum compacts at four fifths of the model's window or 200,000 tokens, whichever comes first. Older tool results are trimmed first. If still over, the conversation becomes a handoff note and continues from it. Your goal, the plan and the last turns cross over.
+
+```
+/compact <what to keep>
+```
+
+## What goes home
+
+```
+hum sync              # send whatever has not reached the server yet
+```
+
+The session transcript and the working tree's history upload together, on every turn. Each state the workspace passes through is one commit, and only the part the server has not taken yet goes up, so a session that never reaches its end still has every state up to its last turn. Anything that fails to go is written on the transcript with its reason and said once on screen; `hum sync` sends what is still missing.
+
+Credential files never upload: `.env`, `.envrc`, `credentials.json`, `.netrc`, `.npmrc`, `.pypirc`, keys, certificates, `.tfstate`, `.aws`, `.ssh`, `.gnupg`. Paths your project ignores are dropped from the history as soon as the ignore rule appears.
+
+```toml
+[sync]
+world = false         # keep the tree history local; the transcript still uploads
+```

@@ -1,0 +1,35 @@
+---
+title: "Run unattended"
+---
+
+```bash
+hum run "task"
+hum run "task" --json                         # one JSON object per line
+hum run "task" --output-last-message out.md
+hum run "task" -C DIR --image shot.png
+```
+
+## Behaviour
+
+- Questions take their default. Leaving the sandbox is refused, as is anything under `ask`.
+- If the model loops on the same call, Hum tells it to wind down and write what is done, what remains and the next step.
+
+## Events (`--json`)
+
+`session.started`, `turn.started`, `message`, `tool.called`, `tool.result`, `hand_edit`, `compacted`, `wind_down`, `notice`, `session.finished`
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| 0 | Done; verdict passed if any |
+| 1 | Verdict failed |
+| 2 | Model failed |
+| 3 | Wound down |
+| 4 | Out of turns or time |
+
+## Export
+
+```bash
+hum export <session> -o file.json             # ATIF trajectory
+```

@@ -1,0 +1,59 @@
+---
+title: "Agent teams"
+description: "A lead session that splits a job into pieces, hands each to a worker session, and keeps them in sync."
+---
+
+A worker is an ordinary Hum session: its own process, its own transcript, its own git worktree. The lead's model decides when a job wants workers, the way it decides to delegate; the harness never asks first. `hum ps` shows every worker, and any of them can be stopped.
+
+## The verbs
+
+The lead's model calls these. They are on every session, beside `delegate`, and a sub-agent never gets them.
+
+| Verb | Does |
+| --- | --- |
+| `team_spawn(task, role, max_turns, depends_on)` | A task on the list, a worktree named after it, and a worker session on it |
+| `team_message(to, text)` | A message into a worker's inbox, on the path a person's message takes |
+| `team_wait(timeout_s)` | Waits until a worker, a task or the inbox changed, and says what changed |
+| `team_status()` | Every worker: name, role, task, state, what it needs from a person, steps, spend |
+| `team_stop(name)` | Ends a worker; its transcript and its worktree survive |
+
+`role=general` does the work including edits, `role=explore` reads and never writes, and every [sub-agent file](/sub-agents) in scope is a role too. A role takes tools away and never adds any. A worker inherits the lead's permission rules and hooks, since it discovers them from the same repository.
+
+At most five workers run per team. A sixth spawn puts the task on the list and says so; it starts as soon as a slot frees. A task with `depends_on` waits for those tasks to finish and then starts on its own. Neither ever fails.
+
+## The task list
+
+One append-only file per team, `~/.hum/teams/<team>/tasks.jsonl`. It holds events, never state: `created`, `claimed`, `blocked_by`, `released`, `completed` (with the verdict and the worker's final tree id) and `reopened`, each naming a task, a time and who did it. The state is rendered by replaying them, so a resumed lead reads its list back.
+
+A claim takes a file lock, so two workers never hold one task. A task whose dependencies are unfinished cannot be claimed, and a completion unblocks whatever waited on it. When a worker's process ends with its task still claimed, the lead's next `team_wait` puts the task back on the list.
+
+A worker whose exchange ends appends `completed` with its own last words as the verdict and the tree its workspace is on.
+
+## Where the files are
+
+| Path | Holds |
+| --- | --- |
+| `~/.hum/teams/<team>/team.json` | The lead's session name and run id, the repository, when the team started |
+| `~/.hum/teams/<team>/tasks.jsonl` | The task list |
+| `~/.hum/sessions/<name>.jsonl` | One transcript per session: the lead's, and one per worker |
+| `<repo>/.hum/worktrees/<task>` | A worker's worktree, on branch `hum/<task>` |
+
+The lead's transcript carries `team_meta` when the team starts and a `task_*` event mirroring each act on the list. One transcript per process, always: the lead never writes a worker's transcript and a worker never writes the lead's.
+
+## From the terminal
+
+```
+hum team              the teams here: the lead, how many workers, how many tasks are open
+hum team <id>         one team's task list
+hum ps                every running session, with its team and role
+hum send <name> "…"   a message to a worker by hand
+hum stop <name>       end one
+hum worktrees         the worktrees the workers are on
+```
+
+## Safety
+
+A message from a session settles nothing: it approves no call, answers no question of the person's, and changes no setting. A worker's questions take their defaults unless a person is attached to that worker, and the lead never answers for the person. Under approvals a worker that would edit is refused, the way a general sub-agent is, and the tool says so.
+
+- [Sub-agents](/sub-agents): workers inside one session, up to five at once, each with a fresh context.
+- [Sessions](/sessions): several sessions, each its own process and transcript. `hum resume` attaches to one.

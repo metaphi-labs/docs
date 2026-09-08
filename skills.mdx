@@ -1,0 +1,34 @@
+---
+title: "Skills"
+description: "A directory with a `SKILL.md`. Hum loads one when the task matches."
+---
+
+## Location
+
+| Path | Scope |
+| --- | --- |
+| `.agents/skills/<name>/` | Repository |
+| `.claude/skills/<name>/` | Repository (Claude Code layout) |
+| `~/.hum/skills/<name>/` | You |
+
+## Evaluate and improve
+
+```bash
+hum skill eval <name>                    # run every case in a fresh workspace
+hum skill propose <name> --action append_section --target "Nothing to do" --content note.md --rationale "..." --evidence <run-dir> <run-dir>
+hum skill apply <name> <proposal>        # re-run cases; revert if any pass -> fail
+hum skill standing <name>                # outcomes per task class, eval history
+```
+
+## Cases
+
+One JSON per case under `<skill>/cases/`:
+
+| Field | Meaning |
+| --- | --- |
+| `task` | The instruction |
+| `gate` | Command run afterwards; exit 0 passes |
+| `fixtures` | Directory copied in first (optional) |
+| `max_turns` | Ceiling (optional) |
+
+Keep one case where the right answer is to do nothing. A proposal needs two runs as evidence.
