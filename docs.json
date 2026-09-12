@@ -9,8 +9,8 @@
     "dark": "#0b0b0a"
   },
   "logo": {
-    "light": "/logo/humboldt.svg",
-    "dark": "/logo/humboldt.svg",
+    "light": "/logo/humboldt-light.svg",
+    "dark": "/logo/humboldt-dark.svg",
     "href": "https://humboldt.metaphi.ai"
   },
   "favicon": "/logo/humboldt.svg",
