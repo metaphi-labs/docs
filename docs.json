@@ -11,7 +11,7 @@
   "logo": {
     "light": "/logo/humboldt-light.svg",
     "dark": "/logo/humboldt-dark.svg",
-    "href": "https://humboldt.metaphi.ai"
+    "href": "https://metaphi.ai/humboldt"
   },
   "favicon": "/logo/humboldt.svg",
   "fonts": {
@@ -87,7 +87,7 @@
     "primary": {
       "type": "button",
       "label": "Install",
-      "href": "https://humboldt.metaphi.ai/docs/quickstart#1-install"
+      "href": "https://docs.metaphi.ai/quickstart#1-install"
     }
   },
   "footer": {
