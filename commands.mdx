@@ -44,6 +44,19 @@ Flags: `-C DIR` work elsewhere, `--image PATH` attach an image, `--plain` text c
 | `hum hooks` | Hooks that would fire here |
 | `hum permissions` | Rules in force here |
 
+## Tool servers
+
+| Command | Description |
+| --- | --- |
+| `hum mcp add <name> <url>` | A server reached over HTTP; `--header "K: V"` repeatable |
+| `hum mcp add <name> -- <command> [args]` | A server started here; `-e K=V` repeatable |
+| `hum mcp get <name>` | One entry, as TOML |
+| `hum mcp list [--json]` | Every server declared here, and what you are signed in to |
+| `hum mcp remove <name>` | Drop it |
+| `hum mcp login <name>`, `logout <name>` | Sign in in the browser; forget what it issued |
+
+`add` and `remove` write your own config; `--scope project` writes the repository's `.hum/config.toml`, for everyone who works in it. `-C DIR` names the repository.
+
 ## Plugins
 
 | Command | Description |

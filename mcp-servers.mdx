@@ -10,11 +10,22 @@ Servers your account is granted connect when you sign in and at the start of eve
 Every account has `docs`: Humboldt's own documentation as a tool server. Ask Humboldt what it can do or how a setting works and it reads the page before answering. For a reader outside a session the same pages are an index at [/llms.txt](/llms.txt) and markdown at `/docs/<page>.md`.
 
 ```
-/mcp              # every server: what mounted, and what did not, with the reason
+/mcp              # every server: pick one to show its tools, reconnect it, sign in or sign out
 /tools            # every tool the model has, and the sandbox it runs in
 ```
 
 ## Your own
+
+```
+hum mcp add jira https://.../mcp --header "Authorization: Bearer $TOKEN"
+hum mcp add db -e DB_URL=postgres://... -- npx db-mcp --readonly
+hum mcp login jira      # sign in in the browser; Hum keeps what the server issued
+hum mcp list            # what is declared here, and what you are signed in to
+hum mcp get jira        # the entry, as TOML
+hum mcp remove jira
+```
+
+A url is reached over HTTP; a command after `--` is started here. Both write a `[[mcp]]` table in your own config; `--scope project` writes the repository's `.hum/config.toml` instead, so everyone who works in it gets the server, on the person's word. In a session, `/mcp` lists them and `/mcp <name>` goes straight to one: show its tools, reconnect it, sign in or sign out.
 
 ```toml
 # ~/.hum/config.toml
@@ -37,6 +48,7 @@ Each `[[mcp]]` table mounts into every session. `/mcp` shows whether it mounted.
 | `url` | Streamable-HTTP address |
 | `command`, `args` | Start the server here instead |
 | `headers` | Sent with every HTTP request |
+| `env` | Variables the server's process is given |
 | `timeout_s` | Seconds one call may take before it fails; default 900 |
 
 ## What a server gets
