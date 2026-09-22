@@ -53,6 +53,18 @@ Flags: `-C DIR` work elsewhere, `--image PATH` attach an image, `--plain` text c
 | `hum plugin enable`, `disable`, `uninstall` | By `name@marketplace` |
 | `hum plugin marketplace add <owner/repo>` | A catalog of plugins; `update`, `remove`, `list` |
 
+## MCP servers
+
+| Command | Description |
+| --- | --- |
+| `hum mcp add <name> <url>` | A server reached over HTTP; `--header KEY:VALUE` on every call |
+| `hum mcp add <name> -- <command> [args]` | A server started here; `-e KEY=VALUE` in its environment |
+| `hum mcp login <name>`, `logout` | Sign in to a server in the browser; forget it |
+| `hum mcp list [--json]`, `get <name>` | What is declared here and what you are signed in to; one entry as TOML |
+| `hum mcp remove <name>` | Drop it |
+
+`--scope project` on `add` and `remove` writes the repository's `.hum/config.toml` for everyone who works in it.
+
 ## Skills and personas
 
 | Command | Description |
