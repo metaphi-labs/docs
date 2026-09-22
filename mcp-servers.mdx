@@ -10,7 +10,7 @@ Servers your account is granted connect when you sign in and at the start of eve
 Every account has `docs`: Hum's own documentation as a tool server. Ask Hum what it can do or how a setting works and it reads the page before answering. For a reader outside a session the same pages are an index at [/llms.txt](/llms.txt) and markdown at `/docs/<page>.md`.
 
 ```
-/mcp              # every server: what mounted, and what did not, with the reason
+/mcp [name]       # every server: pick one to show its tools, reconnect it, sign in or sign out
 /tools            # every tool the model has, and the sandbox it runs in
 ```
 
@@ -40,7 +40,7 @@ args = ["db-mcp", "--readonly"]
 timeout_s = 900              # seconds one call may take; default 900
 ```
 
-Each `[[mcp]]` table mounts into every session. `/mcp` shows whether it mounted.
+Each `[[mcp]]` table mounts into every session. `/mcp` shows whether it mounted, and signs in, reconnects or signs out from there.
 
 | Key | Description |
 | --- | --- |
