@@ -39,7 +39,8 @@ What the newer checks ask:
 | --- | --- |
 | `agent_network` | The agent phase can reach a network. Harbor's `[environment] network_mode` defaults to `public`, so set `[agent] network_mode = "no-network"` (or `[environment] allow_internet = false`). A task that needs a network declares the mode and says why under `[metadata] network_reason` |
 | `reward_readable` | A reward file the oracle published (`/logs/verifier/reward.txt` or `reward.json`) is not readable by a non-root reader, as with `tempfile.mkstemp` (mode 0600). Harbor's local Docker backend then cannot read the reward. Write it world-readable |
-| `bundle_shape` | Besides an undeclared entry, any editor or patch leftover anywhere in the bundle: `*-E` (BSD `sed -i`), `*.orig`, `*.rej`, `*~`, `.*.swp`, `.DS_Store` |
+| `solve_sh_runnable` | `solve.sh` is missing, fails `bash -n`, or runs no command (only comments, `echo` or blank lines). Any command counts; whether it solves the task is the oracle arm's |
+| `bundle_shape` | Besides an undeclared entry, any editor or patch leftover anywhere in the bundle: `*-E` (BSD `sed -i`), `*.orig`, `*.rej`, `*~`, `.*.swp`, `.DS_Store`. A bundle is held to a grading interface's shape only when it declares one: `recorded` is declared by a `case.json` in each case directory (`tests/cases/<case>/case.json`). A bundle that declares none, whatever directories it carries, gets the generic shape |
 | `instruction_flags` (advisory) | Flag `hidden_interface`: the tests depend on a symbol, signature, CLI or path that `instruction.md` never states |
 
 The oracle arm runs the bundle exactly as shipped, through Harbor's own oracle agent, so a reference that touches a path missing from `environment/` scores 0 there.
