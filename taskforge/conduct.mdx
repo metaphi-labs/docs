@@ -30,7 +30,7 @@ One container runs per task and model; each trial gets its own sandbox. Every ru
 
 Every model call a trial makes goes through the Nunatak gateway. The sandbox holds a short-lived token for one model and one trial, never a provider key. Before the run fans out, Kennet checks the gateway once and probes each model; a model it cannot serve refuses the launch before any trial starts.
 
-`google/gemini-3.8-flash` under `terminus-2` is a cheap model to start a task on. `harbor_rollouts` reports each trial's gateway cost and the cost per solve per model and harness.
+`google/gemini-3.8-flash` under `terminus-2` is the default when a run names no model; it runs on Vertex and is the model to start a task on. `harbor_rollouts` reports each trial's gateway cost and the cost per solve per model and harness.
 
 ## What lands where
 
