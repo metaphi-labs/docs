@@ -31,13 +31,13 @@ flowchart TB
 
 | Step | What it proves | Tools |
 | --- | --- | --- |
-| Authoring | A candidate is worth building, and the bundle exists | `run_agent_session`, `run_proposals`, `score_candidate`, `generate_harbor_task` |
-| Pre-run (Check) | The grader rewards the reference, rejects the untouched code and cannot be gamed | `run_task_ci_checks`, `run_task_ci_arms`, `prerun_validate`, `run_harbor_tasks` mode `validate` |
+| Authoring | A candidate is worth building, and the bundle exists | `run_repo_to_tasks`, `run_task_proposals`, `score_candidate`, `generate_harbor_task` |
+| Pre-run (Check) | The grader rewards the reference, rejects the untouched code and cannot be gamed | `run_task_ci_checks`, `prerun_validate`, `run_harbor_tasks` mode `validate` |
 | Conduct | How real agents do on it, at what cost | `run_harbor_tasks`, `calibrate_task` |
 | Post-run (Check) | Each reward was earned, and the task is as hard as you meant | `harbor_rollouts`, `harbor_run_report`, `review_run`, `submit_adjudication` |
 | Consult | What only a person knows: a business rule, an intent, a judgment call | `answer_task`, `ask_human` |
 
-Each step is one tool call. You decide the next one from what the last one returned. `run_agent_session` runs the whole loop for you and still brings its questions to you.
+Each step is one tool call. You decide the next one from what the last one returned. `run_repo_to_tasks` runs the whole loop for you and still brings its questions to you.
 
 ## Where it runs
 
