@@ -30,7 +30,8 @@ Three stages, cheapest first:
 | oracle | The reference solution scores 1.0. Run three times; the repeats must agree |
 | null | The untouched codebase scores below 1.0. Run three times |
 | baseline | Every case that fails on the untouched code fails on an observable it declared, never on an infrastructure reason, and at least one case discriminates |
-| seeded fault | Every planted wrong answer that still runs is caught by a case; at least one fault comes from outside the reference fix's family. The most expensive arm |
+| seeded fault | Every wrong solution is caught by a case, and every right solution scores 1.0. One sandbox per solution; the most expensive arm |
+| pass-to-pass | The behaviour the change must keep held with the reference applied and on the untouched code |
 | adversarial | Rewriting every file outside the declared deliverable cannot reach the reward |
 
 What the newer checks ask:
@@ -45,7 +46,67 @@ What the newer checks ask:
 
 The oracle arm runs the bundle exactly as shipped, through Harbor's own oracle agent, so a reference that touches a path missing from `environment/` scores 0 there.
 
-`eval_ready` is a claim about what ran: the screen passed, every arm ran and every arm passed. Nothing excuses a finding. Pass `arms: false` to screen and audit only; that run is never `eval_ready`. Anything short of `eval_ready` names what refused in `gate.blocking_checks`.
+`eval_ready` is a claim about what ran: the screen passed, every arm ran and passed, and every soundness leg measured something. Nothing excuses a finding. Pass `arms: false` to screen and audit only; that run is never `eval_ready`. Anything short of `eval_ready` names what refused in `gate.blocking_checks`, `gate.unmeasured` and `gate.reason`.
+
+## Soundness
+
+A reward is sound when every right solution scores 1.0 and every wrong one scores below 1.0. Unknown is red: a soundness leg that measured nothing holds `eval_ready` back exactly as a failure does.
+
+| Soundness leg | Measured when | `gate.reason` when not |
+| --- | --- | --- |
+| `oracle` | The reference solution was graded | `the reference solution was not graded` |
+| `null_arm` | The untouched code was graded | `the untouched code was not graded` |
+| `seeded_fault_arm` | The bundle offers at least one wrong solution, and each was graded | `no wrong solutions offered` |
+| `pass_to_pass` | The verifier reported a pass-to-pass outcome on both arms, or the bundle declares it has none | `P2P not reported` |
+
+`gate.soundness_legs` lists the four, `gate.unmeasured` the ones that measured nothing, and `gate.reason` says what is missing in one sentence, for example `no wrong solutions offered; P2P not reported: see https://docs.metaphi.ai/taskforge/pre-run#soundness`.
+
+### Wrong and right solutions
+
+They live in the bundle, under `tests/`:
+
+```
+tests/
+├── test.sh
+├── wrong/<name>.patch     or  wrong/<name>/…    must score below 1.0
+└── right/<name>.patch     or  right/<name>/…    must score 1.0
+```
+
+Harbor never shows `tests/` to the agent: it copies the directory to `/tests` for the verifier once the agent has stopped, or builds a separate verifier container from it. `solution/` reaches only the oracle agent.
+
+Two formats, the same for both kinds:
+
+| Format | What it is | How it is applied |
+| --- | --- | --- |
+| Patch | A `.patch` or `.diff` file | `git apply` in the image's working directory (the image needs `git`) |
+| Overlay | A directory | Its files are copied over the working directory at their relative paths. A `solve.sh` at its top is ignored |
+
+The working directory is the one Harbor runs the reference in: `[environment] workdir`, else the Dockerfile's `WORKDIR`. A task whose agent writes an answer rather than changing code uses an overlay holding that answer, for example `tests/wrong/sign-flipped/answer.json` where the working directory is `/workspace` and the verifier reads `/workspace/answer.json`.
+
+Each solution replaces the reference in a copy of the bundle and runs through Harbor's oracle agent and the bundle's own verifier, in a sandbox of its own. A wrong solution passes when a case rejects it (with no per-case report, when the reward is below 1.0). A right solution passes at 1.0. A solution that does not apply (a patch that fails, a copy that errors) fails the arm; it is never counted as caught. Anything else under `tests/wrong` or `tests/right` (a loose file that is not a patch) fails the arm by name.
+
+At least one wrong solution is required. Right solutions are optional (the reference is the one the oracle arm measures), but each one offered must score 1.0. A wrong solution that survives means a case is missing: add the case. A right solution that fails means a case grades the shape of the code.
+
+Older bundles keep solutions beside the bundle, as `faults/<name>/` (wrong) and `variants/<name>/` (right) next to `<problem>/harbor/`, overlays only. They are still read. The report records each solution's `source` and `format`.
+
+### Pass-to-pass
+
+The verifier reports whether the behaviour the change must keep still holds. The arms read it, in this order:
+
+1. The `pass_to_pass` key of `/logs/verifier/reward.json`: `1` (or any number at or above 1.0) when every pass-to-pass case held, less when one broke.
+2. `/logs/verifier/p2p.txt`: `1` or `pass` when they held, `0` or `fail` when not.
+3. Per-case rows of `grade.json` or `report.json` in `/logs/verifier/` whose `kind` is `pass_to_pass`.
+
+`ctrf.json` alone reports no pass-to-pass outcome: its rows carry no kind. Write `p2p.txt` beside it.
+
+It must hold with the reference applied and on the untouched code. A task with no behaviour to keep (the agent writes an answer from its inputs) declares that in `task.toml`, and the leg passes on the declaration:
+
+```toml
+[metadata]
+no_pass_to_pass_reason = "the agent writes answer.json from the statements; there is no prior behaviour"
+```
+
+A bundle that declares this while its verifier reports pass-to-pass fails. A bundle that neither reports nor declares is not `eval_ready`.
 
 ## Validate: `run_harbor_tasks` mode `validate`
 
@@ -60,7 +121,7 @@ run_harbor_tasks {"repo": "acme/tasks", "ref": "main", "paths": ["tasks/fix-roun
 | `oracle` | `solve.sh` scores 1.0 |
 | `null_arm` | No agent action scores below 1.0. A bundle graded under `gated-binary/1` must score exactly 0.0, with at least one fail-to-pass case, none of them passing, and every pass-to-pass case passing |
 | `probe_cheat` | The oracle with a non-solving `solve.sh` scores below 1.0 |
-| `probe_unsolved` | A seeded fault over the codebase scores below 1.0. Skipped, by name, when the bundle seeds no faults |
+| `probe_unsolved` | The bundle's first wrong solution (`tests/wrong/`) scores below 1.0. Skipped, by name, when the bundle offers none |
 
 Mode `full` adds one `conduct` rollout with the first model. It lands at `<task>/validate/<run id>/`.
 
