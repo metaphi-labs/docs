@@ -60,7 +60,7 @@ When a failure would hit every call alike (the gateway down, credits out), the l
 
 ## Calibrate: `calibrate_task`
 
-One measure cycle on one task: a session copies the bundle, validates it, runs it at k and writes `CALIBRATION_REPORT.md` with one recommended next edit (`difficulty_target` defaults to a mean reward of 0.3). Then it stops. You make the edit and call again. On `kennet:l3` today.
+One measure cycle on one task, named by `repo` + `ref` + `path`, under `models` at `reasoning_effort`: taskforge's calibrate session validates the bundle, runs it at k and writes `CALIBRATION_REPORT.md` with one recommended next edit (`difficulty_target` defaults to a mean reward of 0.3). Then it stops. Everything lands at `<task>/calibrate/<run id>/`: the edited bundle at `harbor/` with the report inside it, the measures at `runs/`, the session's record at `calibrate_result.json`. The finished task links the record and the report. You make the edit and call again. On `kennet:l3` today.
 
 ## Follow and stop
 
