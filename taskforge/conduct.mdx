@@ -42,18 +42,17 @@ Every model call a trial makes goes through the Nunatak gateway. The sandbox hol
 
 ## Failures are typed
 
-Each trial ends as one of these, read from what Harbor recorded at the source:
+Each trial ends as one of these, read from what Harbor recorded at the source. The outcome says whether the grader ran: a trial with a verifier result is `graded` and carries its reward, and it counts as solved where that reward is 1.0 or more (pass@k and solve rates read it so). Only a trial with no verifier result gets an error outcome.
 
 | Outcome | Meaning | In the score |
 | --- | --- | --- |
-| `success`, `reward_failed` | The verifier graded the trial | its reward |
-| `agent_context` | The agent overran its context window | 0 |
-| `agent_timeout` | The agent spent its time budget | 0 |
+| `graded` | The verifier graded the trial, whatever its reward | its reward |
+| `agent_context` | The agent overran its context window, and no verifier ran | 0 |
+| `agent_timeout` | The agent spent its time budget, and no verifier ran | 0 |
 | `infra_error` | Sandbox, image, network or provider failure | not counted |
 | `upstream_error` | The model call failed after the gateway's retries | not counted |
 | `ungradable` | The verifier could not grade: a bundle or image defect | not counted |
 | `missing_result` | No reward and no recognised cause | not counted |
-| `unknown` | A reward outside 0 and 1 with no exception | its reward |
 
 Infrastructure is never scored as the model's 0. It is counted beside the score, and retryable outcomes run again up to `max_attempts`.
 
