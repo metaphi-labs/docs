@@ -13,7 +13,10 @@
     "dark": "/logo/hum-dark.svg",
     "href": "https://metaphi.ai/hum"
   },
-  "favicon": "/logo/hum.svg",
+  "favicon": {
+    "light": "/logo/hum-favicon-light.svg",
+    "dark": "/logo/hum-favicon-dark.svg"
+  },
   "fonts": {
     "heading": {
       "family": "Newsreader",
