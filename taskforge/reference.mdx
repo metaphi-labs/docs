@@ -13,7 +13,7 @@ Hum grants each person one tier. Tiers add up: `l2` reaches everything `l1` does
 | --- | --- | --- |
 | `kennet:l1` | Task authors | Check and run bundles, read runs, adjudicate, follow your tasks. Runs only the models the gateway's `l1` list holds |
 | `kennet:l2` | Trusted authors | Any catalog model, the authoring tools, `review_run`. `run_repo_to_tasks` at most $100 a session |
-| `kennet:l3` | The Metaphi team | Calibration, consults, parked passes, training, traces. `run_repo_to_tasks` at most $500 a session |
+| `kennet:l3` | The Metaphi team | Calibration, consults, parked passes, traces. `run_repo_to_tasks` at most $500 a session |
 | `kennet:anonymize` | A capability, not a tier | `upload_trace`, `anonymize_trace`, `pull_trace` and your own jobs |
 
 A tool above your tier is not listed. Beyond the tier, GitHub decides at the call: a tool that launches or writes needs push to the repository, a read needs read.
@@ -70,16 +70,6 @@ A tool above your tier is not listed. Beyond the tier, GitHub decides at the cal
 | `list_consults` | List your consults | List every consult you opened with its standing. | `l3` |
 | `list_parked` | List parked passes | List your agent passes waiting to resume. | `l3` |
 | `resume_parked` | Resume parked passes | Ask the model API for one token and, when it answers, respawn every pass of yours that waits, oldest first, each continuing its own conversation. | `l3` |
-
-## Train
-
-| Tool | Title | What it does | Tier |
-| --- | --- | --- | --- |
-| `train_select` | Pick a training set | Write a training set from a list of problems, for the operators of a post-training run. | `l3` |
-| `train_reband` | Re-band a training set | Write a new training set from an existing one, narrowed to the problems a finished run still solves sometimes. | `l3` |
-| `train_resolve` | Resolve a train command | Resolve the exact slime command a training run would submit for these inputs and write it beside the run. | `l3` |
-| `train_run` | Start a training run | Launch one post-training run on the GPU node, for its operators; every rollout is a task trial graded by the same verifier task CI uses. | `l3` |
-| `train_eval` | Evaluate a checkpoint | Serve one checkpoint, run a set through it at k trials per problem and grade with the same verifier as training. | `l3` |
 
 ## Anonymize
 
