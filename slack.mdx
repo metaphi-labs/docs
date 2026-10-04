@@ -1,27 +1,27 @@
 ---
-title: "Humboldt in Slack"
+title: "Hum in Slack"
 description: "Install the app, invite it to a channel, connect the repository, and hand it the first task without a terminal."
 ---
 
-Humboldt works from Slack the way it works at the terminal: it runs the task in its own sandbox, keeps a checklist, asks when a decision is yours, and pushes branches and pull requests to the repository. In a channel it acts for the channel: anyone there can hand it work and steer it, and nobody signs in.
+Hum works from Slack the way it works at the terminal: it runs the task in its own sandbox, keeps a checklist, asks when a decision is yours, and pushes branches and pull requests to the repository. In a channel it acts for the channel: anyone there can hand it work and steer it, and nobody signs in.
 
 ## Install
 
-A Slack workspace admin clicks **Add to Slack** at [metaphi.ai/humboldt](https://metaphi.ai/humboldt) and approves the permissions. Slack returns to a page that says the workspace is in and shows the two steps left. No Humboldt account is needed to install.
+A Slack workspace admin clicks **Add to Slack** at [metaphi.ai/hum](https://metaphi.ai/hum) and approves the permissions. Slack returns to a page that says the workspace is in and shows the two steps left. No Hum account is needed to install.
 
 ## Invite it to a channel
 
 In the channel your team works in:
 
 ```text
-/invite @Humboldt
+/invite @Hum
 ```
 
-Humboldt reads only the channels it is invited to, and in them only the threads it speaks in and the messages that mention it.
+Hum reads only the channels it is invited to, and in them only the threads it speaks in and the messages that mention it.
 
 ## Connect the repository
 
-A channel works on one repository. From the page Slack returned you to, or from the link Humboldt answers a first mention with, open **Connect a repository**: pick the channel, paste the repository URL, and connect. For a private repository there is one step more, on GitHub: an owner of the organisation installs the Humboldt GitHub App on it, one click on the link the page shows. Sessions then clone, commit and open pull requests as Humboldt.
+A channel works on one repository. From the page Slack returned you to, or from the link Hum answers a first mention with, open **Connect a repository**: pick the channel, paste the repository URL, and connect. For a private repository there is one step more, on GitHub: an owner of the organisation installs the Hum GitHub App on it, one click on the link the page shows. Sessions then clone, commit and open pull requests as Hum.
 
 An admin of the deployment can bind a channel too (`PUT /admin/comms/repos`), and an admin's binding stands over a link's.
 
@@ -30,21 +30,21 @@ An admin of the deployment can bind a channel too (`PUT /admin/comms/repos`), an
 Mention it with the task in the channel:
 
 ```text
-@Humboldt add the chargeback screen from the HLD and prove it on the emulator
+@Hum add the chargeback screen from the HLD and prove it on the emulator
 ```
 
-Humboldt answers in a thread under your message: a line saying the session started, then its plan as a checklist it edits in place as steps complete, then its words as it works. When it needs you, it asks in the thread; reply there. When it finishes, the thread says so, and a later reply there resumes the same session where it left off.
+Hum answers in a thread under your message: a line saying the session started, then its plan as a checklist it edits in place as steps complete, then its words as it works. When it needs you, it asks in the thread; reply there. When it finishes, the thread says so, and a later reply there resumes the same session where it left off.
 
 ## Threads and replies
 
-- A thread is a session. Reply in it to steer, answer or redirect; you need not mention Humboldt again.
+- A thread is a session. Reply in it to steer, answer or redirect; you need not mention Hum again.
 - Anyone in the channel can reply, member or guest. The words reach the model as written; who said them is on the record.
 - A new mention at the channel's top level is a new session in a new thread, on the same repository.
 - The session runs on Metaphi's Modal, on a workspace kept for that channel and repository, so a reply after the sandbox has gone rebuilds it and the work continues.
 
 ## Direct messages
 
-A direct message to Humboldt is personal work on your own account, not the channel's. The first time, Humboldt answers with a sign-in link; sign in once with the email of your Humboldt account (or the Google or GitHub login you use for it), and from then on your DMs start sessions for you. If your Slack profile email is already a Humboldt account, nothing is asked. An admin can turn DMs off for the deployment.
+A direct message to Hum is personal work on your own account, not the channel's. The first time, Hum answers with a sign-in link; sign in once with the email of your Hum account (or the Google or GitHub login you use for it), and from then on your DMs start sessions for you. If your Slack profile email is already a Hum account, nothing is asked. An admin can turn DMs off for the deployment.
 
 ## For admins
 
@@ -57,9 +57,9 @@ A direct message to Humboldt is personal work on your own account, not the chann
 
 | What you see | What it means | What to do |
 | --- | --- | --- |
-| No reply to a mention | Humboldt is not in the channel | `/invite @Humboldt`, then mention it again |
+| No reply to a mention | Hum is not in the channel | `/invite @Hum`, then mention it again |
 | "this channel is not bound to a repository yet" | The channel has no repository | Open the link in that line and connect one |
-| "this repository is not connected to Humboldt yet" | The repository is private and the GitHub App is not granted on it | An organisation owner installs the app from the link, then mention again |
+| "owner/repo is not connected to Hum" | The repository is private and the GitHub App is not granted on it | An organisation owner installs the app from the link, then mention again |
 | A DM answered with a sign-in link | DMs are personal | Sign in once |
 | "DMs are off on this deployment" | An admin turned DMs off | Use a channel |
-| "This link has expired" on the connect page | Connect links last a day | Mention Humboldt in the channel for a new one |
+| "This link has expired" on the connect page | Connect links last a day | Mention Hum in the channel for a new one |
