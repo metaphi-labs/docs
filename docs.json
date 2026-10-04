@@ -1,19 +1,19 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "willow",
-  "name": "Humboldt",
-  "description": "Humboldt documentation. Install, run a session, steer the work, build with plugins, tool servers and language servers.",
+  "name": "Hum",
+  "description": "Hum documentation. Install, run a session, steer the work, build with plugins, tool servers and language servers.",
   "colors": {
     "primary": "#0b0b0a",
     "light": "#f1efe9",
     "dark": "#0b0b0a"
   },
   "logo": {
-    "light": "/logo/humboldt-light.svg",
-    "dark": "/logo/humboldt-dark.svg",
-    "href": "https://metaphi.ai/humboldt"
+    "light": "/logo/hum-light.svg",
+    "dark": "/logo/hum-dark.svg",
+    "href": "https://metaphi.ai/hum"
   },
-  "favicon": "/logo/humboldt.svg",
+  "favicon": "/logo/hum.svg",
   "fonts": {
     "heading": {
       "family": "Newsreader",
@@ -34,7 +34,7 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Humboldt",
+        "tab": "Hum",
         "groups": [
           {
             "group": "Getting started",
@@ -44,7 +44,7 @@
             ]
           },
           {
-            "group": "Use Humboldt",
+            "group": "Use Hum",
             "pages": [
               "sessions",
               "slack",
@@ -55,7 +55,7 @@
             ]
           },
           {
-            "group": "Build with Humboldt",
+            "group": "Build with Hum",
             "pages": [
               "instructions",
               "plugins",
