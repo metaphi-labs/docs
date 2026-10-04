@@ -57,9 +57,8 @@ A reward is sound when every right solution scores 1.0 and every wrong one score
 | `oracle` | The reference solution was graded | `the reference solution was not graded` |
 | `null_arm` | The untouched code was graded | `the untouched code was not graded` |
 | `seeded_fault_arm` | The bundle offers at least one wrong solution, and each was graded | `no wrong solutions offered` |
-| `pass_to_pass` | The verifier reported a pass-to-pass outcome on both arms, or the bundle declares it has none | `P2P not reported` |
 
-`gate.soundness_legs` lists the four, `gate.unmeasured` the ones that measured nothing, and `gate.reason` says what is missing in one sentence, for example `no wrong solutions offered; P2P not reported: see https://docs.metaphi.ai/taskforge/pre-run#soundness`.
+`gate.soundness_legs` lists the three, `gate.unmeasured` the ones that measured nothing, and `gate.reason` says what is missing in one sentence, for example `no wrong solutions offered: see https://docs.metaphi.ai/taskforge/pre-run#soundness`.
 
 ### Wrong and right solutions
 
@@ -99,14 +98,7 @@ The verifier reports whether the behaviour the change must keep still holds. The
 
 `ctrf.json` alone reports no pass-to-pass outcome: its rows carry no kind. Write `p2p.txt` beside it.
 
-It must hold with the reference applied and on the untouched code. A task with no behaviour to keep (the agent writes an answer from its inputs) declares that in `task.toml`, and the leg passes on the declaration:
-
-```toml
-[metadata]
-no_pass_to_pass_reason = "the agent writes answer.json from the statements; there is no prior behaviour"
-```
-
-A bundle that declares this while its verifier reports pass-to-pass fails. A bundle that neither reports nor declares is not `eval_ready`.
+It must hold with the reference applied and on the untouched code: a reported failure on either side blocks `eval_ready`. A verifier that reports none (the agent writes an answer from its inputs, so there is no prior behaviour) is recorded `skipped` and holds nothing back.
 
 ## Validate: `run_harbor_tasks` mode `validate`
 
