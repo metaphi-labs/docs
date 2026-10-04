@@ -50,7 +50,6 @@ A tool above your tier is not listed. Beyond the tier, GitHub decides at the cal
 | `postrun_validate` | Validate on a model | Run one submitted bundle k times on one model, judge each trial, and return a task whose result holds pass_at_k, the trials solved and the task-goodness flags the trajectory judge raised (reward hacking, instructions sufficient). | `l1` |
 | `review_run` | Review a run | Review a run's trajectories. | `l2` |
 | `review_session` | Review a trajectory | Review an uploaded ATIF trajectory as a session. | `l3` |
-| `get_review_status` | Check a review | Read a review session's progress under one judge. | `l1` |
 | `get_report` | Read a review report | Read a trajectory report whole. | `l1` |
 | `submit_adjudication` | Adjudicate a verdict | File one SME adjudication beside a trajectory report, as a suggestion under your name. | `l1` |
 | `list_adjudications` | List adjudications | List the adjudications filed against a trajectory report, with its review timeline. | `l1` |
@@ -64,10 +63,8 @@ A tool above your tier is not listed. Beyond the tier, GitHub decides at the cal
 
 | Tool | Title | What it does | Tier |
 | --- | --- | --- | --- |
-| `ask_sme_questions` | Ask an SME yes/no | Open one consult from a task's unanswered yes/no questions, skipping any already answered and attaching the task bundle when one exists. | `l3` |
-| `ask_human` | Ask experts on Slack | Open one question to a Slack channel of domain experts and return its id at once. | `l3` |
-| `read_consult` | Read a consult | Read one consult of yours whole. | `l3` |
-| `list_consults` | List your consults | List every consult you opened with its standing. | `l3` |
+| `ask_human` | Ask experts on Slack | Open one question to a Slack channel of domain experts and return its id at once. With `questions: "open"`, ask a task's unanswered yes/no questions, attaching its bundle. | `l3` |
+| `list_consults` | List your consults | List every consult you opened with its standing, or read one whole by `consult_id`. | `l3` |
 | `list_parked` | List parked passes | List your agent passes waiting to resume. | `l3` |
 | `resume_parked` | Resume parked passes | Ask the model API for one token and, when it answers, respawn every pass of yours that waits, oldest first, each continuing its own conversation. | `l3` |
 

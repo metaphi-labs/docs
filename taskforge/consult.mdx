@@ -38,7 +38,7 @@ ask_human {"kind": "question",
 | `attachments` | Run directories packed into a redacted review bundle |
 | `channel` | Never guessed |
 
-`ask_sme_questions` opens one consult from a task's open yes/no questions (`<task>/sme/questions.json`), skipping answered ones. `read_consult` reads one thread whole; `list_consults` lists yours. Only you read your consults.
+`ask_human` with `questions: "open"` opens one consult from a task's open yes/no questions (`<task>/sme/questions.json`), skipping answered ones. `list_consults` lists yours, or reads one thread whole by `consult_id`. Only you read your consults.
 
 ## Parked passes
 
