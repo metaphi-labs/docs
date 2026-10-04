@@ -12,8 +12,8 @@ Hum grants each person one tier. Tiers add up: `l2` reaches everything `l1` does
 | Tier | Who | Adds |
 | --- | --- | --- |
 | `kennet:l1` | Task authors | Check and run bundles, read runs, adjudicate, follow your tasks. Runs only the models the gateway's `l1` list holds |
-| `kennet:l2` | Trusted authors | Any catalog model, the authoring tools, `review_run`. `run_agent_session` at most $100 a session |
-| `kennet:l3` | The Metaphi team | Calibration, consults, parked passes, training, traces. `run_agent_session` at most $500 a session |
+| `kennet:l2` | Trusted authors | Any catalog model, the authoring tools, `review_run`. `run_repo_to_tasks` at most $100 a session |
+| `kennet:l3` | The Metaphi team | Calibration, consults, parked passes, training, traces. `run_repo_to_tasks` at most $500 a session |
 | `kennet:anonymize` | A capability, not a tier | `upload_trace`, `anonymize_trace`, `pull_trace` and your own jobs |
 
 A tool above your tier is not listed. Beyond the tier, GitHub decides at the call: a tool that launches or writes needs push to the repository, a read needs read.
@@ -22,8 +22,8 @@ A tool above your tier is not listed. Beyond the tier, GitHub decides at the cal
 
 | Tool | Title | What it does | Tier |
 | --- | --- | --- | --- |
-| `run_agent_session` | Run the task forge | Run taskforge's whole loop over a repository. | `l2` |
-| `run_proposals` | Mine task ideas | Mine a repository for task candidates (taskforge's task_proposals). | `l2` |
+| `run_repo_to_tasks` | Forge tasks from a repo | Run taskforge's whole loop over a repository. | `l2` |
+| `run_task_proposals` | Mine task ideas | Mine a repository for task candidates (taskforge's task_proposals). | `l2` |
 | `score_candidate` | Score a task idea | Score one task candidate against the calibration rubric and return its three measurements. | `l2` |
 | `generate_harbor_task` | Write a Harbor task | Generate an eval-ready Harbor task bundle (taskforge's sme_to_harbor session). | `l2` |
 | `run_sandbox_session` | Run a sandbox session | Run an open-ended sandbox session (taskforge's run_sandbox_session) on the environment the repository declares. | `l2` |
@@ -33,8 +33,7 @@ A tool above your tier is not listed. Beyond the tier, GitHub decides at the cal
 
 | Tool | Title | What it does | Tier |
 | --- | --- | --- | --- |
-| `run_task_ci_checks` | Pre-run checks | Run pre-run checks on Harbor tasks (taskforge's task_ci_checks). | `l1` |
-| `run_task_ci_arms` | Run the sandbox arms | Check one Harbor bundle and return a task whose result says whether it is eval_ready. | `l1` |
+| `run_task_ci_checks` | Pre-run checks | Run task CI on Harbor bundles: the screen, the advisory audits, and the arms that decide eval_ready. | `l1` |
 | `prerun_validate` | Validate before a run | Validate one submitted bundle's construction before any run and return a task whose result says passed, what is missing and what warns, check by check. | `l1` |
 
 ## Conduct
@@ -106,7 +105,7 @@ A refusal comes back as a tool error with one sentence that names what to fix.
 | --- | --- |
 | `<tool> needs kennet:l2 and you hold kennet:l1; ask Metaphi for kennet:l2` | Ask for the tier, or use a tool your tier lists |
 | `<tool> on kennet:l1 runs <models>; ask Metaphi for kennet:l2` | Pick a model from the list it names |
-| `run_agent_session on kennet:l2 spends at most $100 (cost_budget_usd)` | Lower `cost_budget_usd` |
+| `run_repo_to_tasks on kennet:l2 spends at most $100 (cost_budget_usd)` | Lower `cost_budget_usd` |
 | `sign in to Hum with GitHub to work on a repository` | Sign in again with GitHub: `hum mcp login kennet` |
 | `you do not push to <repo> on GitHub, and this call writes to it; ask its owner for write access` | Get write access, or work in a repository you push to |
 | `you do not read <repo> on GitHub` | Check the name and your access |

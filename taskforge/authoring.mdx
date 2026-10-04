@@ -5,12 +5,12 @@ description: "Seed Taskforge with a repository or source material; it mines cand
 
 You choose what to build from: a repository's history, a directory of source material, a draft. Taskforge drafts. Every authoring tool reads your repository as you and writes to its runs, so each needs your push.
 
-## The forge: `run_agent_session`
+## The forge: `run_repo_to_tasks`
 
 Runs the whole loop over a repository: find candidates, queue them, author each as a bundle, verify it (pre-run checks, oracle, nop and probe, pass@1 on `target_model`, trajectory review), revise, and debrief. A task is kept when its pass@1 is below the threshold.
 
 ```json
-run_agent_session {"repo": "acme/service", "ref": "main",
+run_repo_to_tasks {"repo": "acme/service", "ref": "main",
                    "target": 5, "pass_at_1_threshold": 0.2,
                    "target_model": "google/gemini-3.8-flash", "k_rollouts": 1,
                    "reasoning_effort": "medium", "cost_budget_usd": 50,
@@ -25,20 +25,20 @@ run_agent_session {"repo": "acme/service", "ref": "main",
 | `cost_budget_usd` | What the session may spend, sessions and rollouts together. Default 100; your tier caps it |
 | `batch`, `max_attempts` | Candidates authored at once (three at most), and tried before it stops |
 | `environment` | The file at `ref` that declares the toolchain (a Dockerfile, a requirements `.txt` or a `pyproject.toml`); every bundle's Dockerfile opens with it |
-| `seed` | A `run_proposals` run id; its candidates seed the queue |
+| `seed` | A `run_task_proposals` run id; its candidates seed the queue |
 | `resume` | A session id to continue |
 
 Kept bundles stand at `<task>/harbor/` with their checks and runs beside them. The session's worklog, queue and memory land at `agent-sessions/<session id>/`. While it runs it may ask you a question; see [Consult](/taskforge/consult). A session caps at $100 on `kennet:l2` and $500 on `kennet:l3`.
 
-## Mining: `run_proposals`
+## Mining: `run_task_proposals`
 
 Mines a repository for candidates: its commits, and its merged pull requests with the issues they close. Deduplicated, ranked and scored. A candidate is an idea with its base and final commits, not a bundle.
 
 ```json
-run_proposals {"repo": "acme/service", "ref": "main", "miners": ["prs"], "max_candidates": 20}
+run_task_proposals {"repo": "acme/service", "ref": "main", "miners": ["prs"], "max_candidates": 20}
 ```
 
-`proposals.json` lands at `proposals/<run id>/`. Pass the run id to `run_agent_session` as `seed`.
+`proposals.json` lands at `proposals/<run id>/`. Pass the run id to `run_repo_to_tasks` as `seed`.
 
 ## Scoring: `score_candidate`
 
