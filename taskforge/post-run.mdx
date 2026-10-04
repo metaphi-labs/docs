@@ -1,0 +1,63 @@
+---
+title: "Post-run"
+description: "Read what a run did: one row per rollout, pass@k per task, a review of every trajectory, and your verdict where the review is wrong."
+---
+
+A reward says whether the verifier passed. Post-run checks ask whether it was earned and whether the task is as hard as you meant.
+
+## Rollout rows: `harbor_rollouts`
+
+```json
+harbor_rollouts {"repo": "acme/tasks", "task": "fix-rounding"}
+```
+
+One row per trial across the repository's eval runs: ids, model, harness, reward and the grade beside it, failure type, gateway cost, tokens, phase times, model wait against tool time, sandbox CPU and peak memory. Then the folds:
+
+| Fold | What it says |
+| --- | --- |
+| Per task, model and harness | Valid trials, solves, reward mean and spread, pass@k and pass^k at each k you launched, and a band: `all_fail`, `learnable` or `saturated` |
+| Per model and harness | Cost whole and lost to infrastructure, cost per solve, phase percentiles |
+| Infra loss | Trials lost, by kind |
+
+Trials lost to infrastructure are left out of pass@k; the agent's own timeouts and context overruns count as unsolved. A `learnable` task is one agents solve sometimes.
+
+## One run: `harbor_runs`, `harbor_run_report`
+
+`harbor_runs` lists the repository's runs, newest first; narrow by `task` and `kind` (`eval`, `ci`, `validate`). `harbor_run_report` lists one run's records, trials and files; name a `trial` for its judged report. Read any file whole as a `kennet://` resource, or pull the run with `pull_run`.
+
+## Trajectory review: `review_run`
+
+A conduct run judges each trial as it finishes (`analyze`, on by default). `review_run` reviews a run, or one trial, again, with a judge you name:
+
+```json
+review_run {"repo": "acme/tasks", "run_path": "fix-rounding/eval/<run id>/<model slug>"}
+```
+
+Each trial gets `trajectory_report.json` beside its `result.json`; the run gets `trajectory_analysis_summary.json`. A report holds:
+
+- A rubric: run success, reward integrity, reward hacking, harness communication, stuckness, recovery, tool use.
+- Task flags, among them whether the instruction was sufficient and whether the agent failed on the real challenge.
+- Whether the trial is eligible for post-training, and the blockers when it is not.
+- Recommended fixes to the task.
+
+`get_report` reads a report whole.
+
+Got a trajectory from somewhere else? `upload_trace`, then `review_session` reviews it the same way; `get_review_status` follows it.
+
+## Adjudication
+
+The review is a machine verdict. Where it is wrong, yours stands beside it.
+
+```json
+submit_adjudication {"repo": "acme/tasks",
+                     "report_path": "fix-rounding/eval/<run id>/<model slug>/<trial>/trajectory_report.json",
+                     "adjudication": {"reward_hacking": "none", "reason": "the agent fixed the rounding at its source"}}
+```
+
+It is filed under your name in `review/adjudications/`, appended to `review/timeline.json`, and set as `review/latest.json`. It returns a `suggestion_id`. `resolve_suggestion` marks it `accepted`, `rejected` or `open` with a note; `list_adjudications` shows the history.
+
+## Then decide
+
+- `saturated`: too easy for that model. Harden it, or keep it for a stronger one.
+- `all_fail` and the reviews say the instruction was short of information: fix the instruction.
+- A reward-hacking verdict you confirm: fix the verifier, then run [pre-run checks](/taskforge/pre-run) again.

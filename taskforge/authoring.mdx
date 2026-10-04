@@ -1,0 +1,66 @@
+---
+title: "Authoring"
+description: "Seed Taskforge with a repository or source material; it mines candidates, scores them and drafts the bundles."
+---
+
+You choose what to build from: a repository's history, a directory of source material, a draft. Taskforge drafts. Every authoring tool reads your repository as you and writes to its runs, so each needs your push.
+
+## The forge: `run_agent_session`
+
+Runs the whole loop over a repository: find candidates, queue them, author each as a bundle, verify it (pre-run checks, oracle, nop and probe, pass@1 on `target_model`, trajectory review), revise, and debrief. A task is kept when its pass@1 is below the threshold.
+
+```json
+run_agent_session {"repo": "acme/service", "ref": "main",
+                   "target": 5, "pass_at_1_threshold": 0.2,
+                   "target_model": "google/gemini-3.8-flash", "k_rollouts": 1,
+                   "reasoning_effort": "medium", "cost_budget_usd": 50,
+                   "environment": "Dockerfile"}
+```
+
+| Argument | Meaning |
+| --- | --- |
+| `target` | Kept tasks the session aims for. Default 10 |
+| `pass_at_1_threshold` | Keep a task when pass@1 is below this. Default 0.2 |
+| `target_model`, `k_rollouts` | What pass@1 is measured on, and how many rollouts |
+| `cost_budget_usd` | What the session may spend, sessions and rollouts together. Default 100; your tier caps it |
+| `batch`, `max_attempts` | Candidates authored at once (three at most), and tried before it stops |
+| `environment` | The file at `ref` that declares the toolchain (a Dockerfile, a requirements `.txt` or a `pyproject.toml`); every bundle's Dockerfile opens with it |
+| `seed` | A `run_proposals` run id; its candidates seed the queue |
+| `resume` | A session id to continue |
+
+Kept bundles stand at `<task>/harbor/` with their checks and runs beside them. The session's worklog, queue and memory land at `agent-sessions/<session id>/`. While it runs it may ask you a question; see [Consult](/taskforge/consult). A session caps at $100 on `kennet:l2` and $500 on `kennet:l3`.
+
+## Mining: `run_proposals`
+
+Mines a repository for candidates: its commits, and its merged pull requests with the issues they close. Deduplicated, ranked and scored. A candidate is an idea with its base and final commits, not a bundle.
+
+```json
+run_proposals {"repo": "acme/service", "ref": "main", "miners": ["prs"], "max_candidates": 20}
+```
+
+`proposals.json` lands at `proposals/<run id>/`. Pass the run id to `run_agent_session` as `seed`.
+
+## Scoring: `score_candidate`
+
+Scores one candidate and returns three measures: `idea_difficulty`, `idea_quality`, and `oracle_quality_score` when the record proposes test cases. No overall score and no bar: what a score is worth is your call. Stateless; nothing is written.
+
+```json
+score_candidate {"record": {"change": "...", "evidence": "...", "cases": []}}
+```
+
+## One bundle: `generate_harbor_task`
+
+Writes one bundle from source material and pushes it to a branch. Use it rather than writing a bundle by hand.
+
+```json
+generate_harbor_task {"repo": "acme/tasks", "ref": "main", "path": "tasks/fix-rounding",
+                      "source_path": "material/rounding", "examples_paths": ["tasks/gold-1"],
+                      "run_ci": true, "brief": "a maintenance fix, no refactor"}
+```
+
+The result carries `bundle_path`, the conversion report, the branch it landed on, and `eval_ready` when `run_ci` is set. `generate_harbor_task` is the only tool that writes to your repository.
+
+## Also
+
+- `run_sandbox_session`: an open-ended session on the environment the repository declares, toward a goal you write (a toolchain spike, fixtures). It writes `SANDBOX_REPORT.md` and lands at `sandbox/<run id>/`.
+- `run_skill_eval`: evaluates one of Taskforge's own skills against a fixed case. For the team that maintains the skills.

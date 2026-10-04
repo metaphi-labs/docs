@@ -1,0 +1,80 @@
+---
+title: "Quickstart"
+description: "Connect Taskforge in Hum, then take one bundle through the loop: check it, validate it, run it at k, read the run."
+---
+
+## 1. Connect
+
+If your account is granted Taskforge, the `kennet` server connects when you sign in to Hum. Otherwise add it:
+
+```
+hum mcp add kennet https://metaphi-ai--kennet-harness-mcp-web.modal.run/mcp/
+hum mcp login kennet      # the browser opens; sign in with GitHub
+```
+
+Sign in with GitHub: every call is checked against your own GitHub access. `/mcp kennet` shows the tools your tier reaches, and `/tools` lists them by group. See [MCP servers](/mcp-servers).
+
+Any MCP client works the same way: point it at the URL above and sign in when it answers 401.
+
+## 2. Push a bundle
+
+A bundle is a directory holding `task.toml`, with `instruction.md`, `environment/`, `solution/solve.sh` and `tests/test.sh`. Push it first: Kennet clones GitHub, never your checkout.
+
+The steps below use `acme/tasks` at `main`, bundle `tasks/fix-rounding`. Its runs land under `fix-rounding/`. You can ask Hum in plain words ("run pre-run checks on tasks/fix-rounding"); the calls are shown so you know what it sends.
+
+## 3. Pre-run checks
+
+```json
+run_task_ci_checks {"repo": "acme/tasks", "ref": "main", "path": "tasks/fix-rounding",
+                    "run_oracle": true, "run_nop": true}
+```
+
+It returns a task. Poll `get_task` until it ends. Read `tasks[<bundle>].eval_ready`; when false, each failing check names what to fix. Edit, push, call again. The report lands at `fix-rounding/ci/<run id>/`.
+
+## 4. Validate
+
+```json
+run_harbor_tasks {"repo": "acme/tasks", "ref": "main", "paths": ["tasks/fix-rounding"],
+                  "mode": "validate"}
+```
+
+One trial per leg: the reference solution must score 1.0, the untouched code below it, and a cheat probe must not pass. It lands at `fix-rounding/validate/<run id>/`.
+
+## 5. Conduct
+
+```json
+run_harbor_tasks {"repo": "acme/tasks", "ref": "main", "paths": ["tasks/fix-rounding"],
+                  "mode": "conduct", "models": ["google/gemini-3.8-flash"],
+                  "harness": "terminus-2", "k": 8, "reasoning_effort": "medium"}
+```
+
+Eight trials, each judged as it finishes. `reasoning_effort` is required; Kennet has no default. The task's progress counts calls by phase while it works. The run lands at `fix-rounding/eval/<run id>/<model slug>/`.
+
+## 6. Read the run
+
+```json
+harbor_rollouts   {"repo": "acme/tasks", "task": "fix-rounding"}
+harbor_run_report {"repo": "acme/tasks", "run_id": "<run id>"}
+```
+
+`harbor_rollouts` gives one row per trial (reward, failure type, cost, tokens, phase times) and per task the pass@k and its band. `harbor_run_report` lists one run's trials and files; name a `trial` for its judged report.
+
+## 7. Review the trajectories
+
+```json
+review_run {"repo": "acme/tasks", "run_path": "fix-rounding/eval/<run id>/<model slug>"}
+```
+
+Every trial gets `trajectory_report.json`: whether the reward was earned, whether the agent got stuck, and recommended fixes to the task. Disagree with a verdict? See [Post-run](/taskforge/post-run).
+
+## 8. Pull it
+
+```json
+pull_run {"repo": "acme/tasks", "run_id": "<run id>"}
+```
+
+It returns a `curl` command. Run it; the run lands in `./jobs/<run id>/` in Harbor's layout, and `harbor view jobs/<run id>` browses it.
+
+## Then decide
+
+Too easy (pass@k near 1)? Harden the task. Unsolved and the reviews say the instruction is short of information? Fix the instruction. Then push and go round again. Keeping, revising and rejecting are yours.
