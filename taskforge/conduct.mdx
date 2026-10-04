@@ -1,0 +1,68 @@
+---
+title: "Conduct"
+description: "Run agents on the task at k on Harbor, see what each trial cost, and know which failures were the model's."
+---
+
+The checks cannot tell you what an agent will do with a task. Conduct runs it.
+
+## Run: `run_harbor_tasks`
+
+```json
+run_harbor_tasks {"repo": "acme/tasks", "ref": "main",
+                  "paths": ["tasks/fix-rounding", "tasks/fix-tax"],
+                  "mode": "conduct", "models": ["google/gemini-3.8-flash"],
+                  "harness": "terminus-2", "k": 8, "reasoning_effort": "medium"}
+```
+
+| Argument | Meaning |
+| --- | --- |
+| `models` | Catalog ids from the model gateway. The ones your tier may run are this field's enum |
+| `harness` | The agent the model runs under. Default `terminus-2` |
+| `k` | Trials per task and model |
+| `reasoning_effort` | Required. Passed verbatim to the harness's own setting; Kennet has no default |
+| `max_output_tokens` | The output limit per model call. 0 keeps the harness default, recorded as such |
+| `analyze` | Judge each trial as it finishes. Default true |
+| `max_attempts` | Re-runs of a trial that failed on infrastructure. Default 3 |
+
+One container runs per task and model; each trial gets its own sandbox. Every run records the repository and the commit it ran at.
+
+## Models and cost
+
+Every model call a trial makes goes through the Nunatak gateway. The sandbox holds a short-lived token for one model and one trial, never a provider key. Before the run fans out, Kennet checks the gateway once and probes each model; a model it cannot serve refuses the launch before any trial starts.
+
+`google/gemini-3.8-flash` under `terminus-2` is a cheap model to start a task on. `harbor_rollouts` reports each trial's gateway cost and the cost per solve per model and harness.
+
+## What lands where
+
+```
+<task>/harbor/                         the bundle as it last ran
+<task>/eval/<run id>/<model slug>/     the run: each trial's result.json, logs, trajectory
+                                       rollouts.jsonl, one row per trial
+```
+
+## Failures are typed
+
+Each trial ends as one of these, read from what Harbor recorded at the source:
+
+| Outcome | Meaning | In the score |
+| --- | --- | --- |
+| `success`, `reward_failed` | The verifier graded the trial | its reward |
+| `agent_context` | The agent overran its context window | 0 |
+| `agent_timeout` | The agent spent its time budget | 0 |
+| `infra_error` | Sandbox, image, network or provider failure | not counted |
+| `upstream_error` | The model call failed after the gateway's retries | not counted |
+| `ungradable` | The verifier could not grade: a bundle or image defect | not counted |
+| `missing_result` | No reward and no recognised cause | not counted |
+| `unknown` | A reward outside 0 and 1 with no exception | its reward |
+
+Infrastructure is never scored as the model's 0. It is counted beside the score, and retryable outcomes run again up to `max_attempts`.
+
+When a failure would hit every call alike (the gateway down, credits out), the launch stops the calls not yet rolling out and marks them `stopped`. The task's result names the failure and carries `rerun`: the one call that runs exactly the stopped work again.
+
+## Calibrate: `calibrate_task`
+
+One measure cycle on one task: a session copies the bundle, validates it, runs it at k and writes `CALIBRATION_REPORT.md` with one recommended next edit (`difficulty_target` defaults to a mean reward of 0.3). Then it stops. You make the edit and call again. On `kennet:l3` today.
+
+## Follow and stop
+
+Every run is a task. `get_task` shows each call's phase and any failure as it happens. `cancel_task` cancels every call and stops its sandboxes.

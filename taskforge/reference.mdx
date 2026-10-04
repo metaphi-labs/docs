@@ -1,0 +1,118 @@
+---
+title: "Reference"
+description: "Every tool the kennet server serves, by group, with the lowest tier that calls it. Common refusals and what to do."
+---
+
+Each tool's title and first line, as the server publishes them. The full description and every argument are in the tool's schema; `/mcp kennet` in Hum shows them.
+
+## Tiers
+
+Hum grants each person one tier. Tiers add up: `l2` reaches everything `l1` does.
+
+| Tier | Who | Adds |
+| --- | --- | --- |
+| `kennet:l1` | Task authors | Check and run bundles, read runs, adjudicate, follow your tasks. Runs only the models the gateway's `l1` list holds |
+| `kennet:l2` | Trusted authors | Any catalog model, the authoring tools, `review_run`. `run_agent_session` at most $100 a session |
+| `kennet:l3` | The Metaphi team | Calibration, consults, parked passes, training, traces. `run_agent_session` at most $500 a session |
+| `kennet:anonymize` | A capability, not a tier | `upload_trace`, `anonymize_trace`, `pull_trace` and your own jobs |
+
+A tool above your tier is not listed. Beyond the tier, GitHub decides at the call: a tool that launches or writes needs push to the repository, a read needs read.
+
+## Authoring
+
+| Tool | Title | What it does | Tier |
+| --- | --- | --- | --- |
+| `run_agent_session` | Run the task forge | Run taskforge's whole loop over a repository. | `l2` |
+| `run_proposals` | Mine task ideas | Mine a repository for task candidates (taskforge's task_proposals). | `l2` |
+| `score_candidate` | Score a task idea | Score one task candidate against the calibration rubric and return its three measurements. | `l2` |
+| `generate_harbor_task` | Write a Harbor task | Generate an eval-ready Harbor task bundle (taskforge's sme_to_harbor session). | `l2` |
+| `run_sandbox_session` | Run a sandbox session | Run an open-ended sandbox session (taskforge's run_sandbox_session) on the environment the repository declares. | `l2` |
+| `run_skill_eval` | Evaluate a forge skill | Evaluate one of taskforge's skills. | `l3` |
+
+## Pre-run
+
+| Tool | Title | What it does | Tier |
+| --- | --- | --- | --- |
+| `run_task_ci_checks` | Pre-run checks | Run pre-run checks on Harbor tasks (taskforge's task_ci_checks). | `l1` |
+| `run_task_ci_arms` | Run the sandbox arms | Check one Harbor bundle and return a task whose result says whether it is eval_ready. | `l1` |
+| `prerun_validate` | Validate before a run | Validate one submitted bundle's construction before any run and return a task whose result says passed, what is missing and what warns, check by check. | `l1` |
+
+## Conduct
+
+| Tool | Title | What it does | Tier |
+| --- | --- | --- | --- |
+| `run_harbor_tasks` | Run bundles on models | Run each named bundle and return one task covering every run. | `l1` |
+| `calibrate_task` | Calibrate one task | Run one calibrate cycle over one task and return a task. | `l3` |
+
+## Post-run
+
+| Tool | Title | What it does | Tier |
+| --- | --- | --- | --- |
+| `postrun_validate` | Validate on a model | Run one submitted bundle k times on one model, judge each trial, and return a task whose result holds pass_at_k, the trials solved and the task-goodness flags the trajectory judge raised (reward hacking, instructions sufficient). | `l1` |
+| `review_run` | Review a run | Review a run's trajectories. | `l2` |
+| `review_session` | Review a trajectory | Review an uploaded ATIF trajectory as a session. | `l3` |
+| `get_review_status` | Check a review | Read a review session's progress under one judge. | `l1` |
+| `get_report` | Read a review report | Read a trajectory report whole. | `l1` |
+| `submit_adjudication` | Adjudicate a verdict | File one SME adjudication beside a trajectory report, as a suggestion under your name. | `l1` |
+| `list_adjudications` | List adjudications | List the adjudications filed against a trajectory report, with its review timeline. | `l1` |
+| `resolve_suggestion` | Resolve a suggestion | Resolve an adjudication's suggestion under your name. | `l1` |
+| `harbor_runs` | List a repo's runs | List a repository's runs newest first. | `l1` |
+| `harbor_run_report` | Report one run | Report one run. | `l1` |
+| `harbor_rollouts` | Rollouts and costs | Return one row per rollout across a repository's eval runs (ids, model, harness, reward and the grade beside it, failure type, gateway API cost, tokens, phase times, model wait against tool time, sandbox CPU and peak memory) and their folds. | `l1` |
+| `pull_run` | Pull a run locally | Pull a run, or one file or directory in it, into your working directory. | `l1` |
+
+## Consult
+
+| Tool | Title | What it does | Tier |
+| --- | --- | --- | --- |
+| `ask_sme_questions` | Ask an SME yes/no | Open one consult from a task's unanswered yes/no questions, skipping any already answered and attaching the task bundle when one exists. | `l3` |
+| `ask_human` | Ask experts on Slack | Open one question to a Slack channel of domain experts and return its id at once. | `l3` |
+| `read_consult` | Read a consult | Read one consult of yours whole. | `l3` |
+| `list_consults` | List your consults | List every consult you opened with its standing. | `l3` |
+| `list_parked` | List parked passes | List your agent passes waiting to resume. | `l3` |
+| `resume_parked` | Resume parked passes | Ask the model API for one token and, when it answers, respawn every pass of yours that waits, oldest first, each continuing its own conversation. | `l3` |
+
+## Train
+
+| Tool | Title | What it does | Tier |
+| --- | --- | --- | --- |
+| `train_select` | Pick a training set | Write a training set from a list of problems, for the operators of a post-training run. | `l3` |
+| `train_reband` | Re-band a training set | Write a new training set from an existing one, narrowed to the problems a finished run still solves sometimes. | `l3` |
+| `train_resolve` | Resolve a train command | Resolve the exact slime command a training run would submit for these inputs and write it beside the run. | `l3` |
+| `train_run` | Start a training run | Launch one post-training run on the GPU node, for its operators; every rollout is a task trial graded by the same verifier task CI uses. | `l3` |
+| `train_eval` | Evaluate a checkpoint | Serve one checkpoint, run a set through it at k trials per problem and grade with the same verifier as training. | `l3` |
+
+## Anonymize
+
+| Tool | Title | What it does | Tier |
+| --- | --- | --- | --- |
+| `upload_trace` | Upload a trace | Get a curl command that uploads one agent trace from your working directory. | `l3` |
+| `anonymize_trace` | Anonymize a trace | Anonymize an uploaded trace. | `l3` |
+| `pull_trace` | Pull a trace | Get a curl command that downloads an anonymized trace, or its report, into your working directory. | `l3` |
+
+## Jobs
+
+| Tool | Title | What it does | Tier |
+| --- | --- | --- | --- |
+| `get_task` | Check a running job | Read a task a tool started. | `l1` |
+| `answer_task` | Answer a running job | Answer the questions a running task asks you (its status is input_required and its inputRequests carry them); the task goes on with your answers. | `l1` |
+| `cancel_task` | Stop a running job | Cancel a task a tool started. | `l1` |
+
+## Common refusals
+
+A refusal comes back as a tool error with one sentence that names what to fix.
+
+| Refusal | Do |
+| --- | --- |
+| `<tool> needs kennet:l2 and you hold kennet:l1; ask Metaphi for kennet:l2` | Ask for the tier, or use a tool your tier lists |
+| `<tool> on kennet:l1 runs <models>; ask Metaphi for kennet:l2` | Pick a model from the list it names |
+| `run_agent_session on kennet:l2 spends at most $100 (cost_budget_usd)` | Lower `cost_budget_usd` |
+| `sign in to Hum with GitHub to work on a repository` | Sign in again with GitHub: `hum mcp login kennet` |
+| `you do not push to <repo> on GitHub, and this call writes to it; ask its owner for write access` | Get write access, or work in a repository you push to |
+| `you do not read <repo> on GitHub` | Check the name and your access |
+| `<repo> has no ref <ref>` | Push the branch first; Kennet clones GitHub, never your checkout |
+| `name a bundle in <repo> by ref + path, or by staged for one already on its runs` | Pass `ref` and `path` (or `paths`), not both forms |
+| `mode conduct requires at least one model` | Pass `models` |
+| `reasoning_effort is required: name the effort this run is to use (for example medium) …` | Pass `reasoning_effort` |
+| `no run started: the gateway preflight did not answer …` or `every model was refused …` | Nothing ran and nothing was spent. Try again later, or pick another model |
+| `task <id> asks no open question <qid>` | The question was answered or withdrawn; `get_task` shows what is open |

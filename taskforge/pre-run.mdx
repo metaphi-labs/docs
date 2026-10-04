@@ -1,0 +1,73 @@
+---
+title: "Pre-run checks"
+description: "Test the grader before any agent runs: the reference must earn the reward, the untouched code must not, and the reward must not be reachable without solving the task."
+---
+
+A benchmark's pass rate means something only when its grader is right. Pre-run checks prove that before you pay for rollouts.
+
+## Task CI: `run_task_ci_checks`
+
+Run it on a complete draft (instruction, Dockerfile, code, `test.sh`, `solve.sh`), and again after each change to the instruction, the verifier or the environment.
+
+```json
+run_task_ci_checks {"repo": "acme/tasks", "ref": "main", "path": "tasks/fix-rounding",
+                    "run_oracle": true, "run_nop": true}
+```
+
+Stop when `tasks[<bundle>].eval_ready` is true. The report lands at `<task>/ci/<run id>/`. Several bundles at once: pass `paths`; one batch report lands at `ci-batch/<run id>/`.
+
+| Group | Checks | Gates |
+| --- | --- | --- |
+| Packaging | `harbor_config` | yes |
+| | `harbor_structure`, `solution_format`, `task_reference` | advisory |
+| Verifier | `test_setup_runnable`, `test_not_fragile`, `test_data_driven` | yes |
+| | `test_quality`, `task_eval_signal` (judged) | yes |
+| | `test_file_references` | advisory |
+| Instruction | `instruction_leakage`, `instruction_private_details`, `instruction_flags` | yes |
+| Environment | `solve_sh_runnable` | yes |
+| | `dockerfile_sanity` | advisory |
+| Execution | `oracle`: the reference solution scores 1.0 | yes |
+| | `nop`: the untouched code does not | yes |
+
+`eval_ready` is a claim about what ran. It needs the static checks, `oracle` and `nop` all executed; a run that skipped one is `screened`, not ready. A gating failure blocks it. Advisory checks record findings only.
+
+A waiver excuses one finding. Operators write waivers outside the bundle; a waiver file inside the bundle is rejected. A waived run reads `eval_ready_waived`. `oracle`, `nop` and an `error` can never be waived.
+
+## Every arm: `run_task_ci_arms`
+
+Kennet's own check, and the strictest. Static checks, then each arm in a sandbox of its own:
+
+| Arm | Proves |
+| --- | --- |
+| oracle | The reference solution scores 1.0. Run three times; the repeats must agree |
+| null | The untouched codebase scores below 1.0. Run three times |
+| baseline | Every case that fails on the untouched code fails on an observable it declared, never on an infrastructure reason, and at least one case discriminates |
+| seeded fault | Every planted wrong answer that still runs is caught by a case; at least one fault comes from outside the reference fix's family. The most expensive arm |
+| adversarial | Rewriting every file outside the declared deliverable cannot reach the reward |
+
+```json
+run_task_ci_arms {"repo": "acme/tasks", "ref": "main", "path": "tasks/fix-rounding"}
+```
+
+Each arm can be turned off (`run_seeded_fault_arm: false`), but a run that skipped one is not `eval_ready` and names what it did not measure. The report lands at `<task>/ci/<run id>/report.json`.
+
+## Validate: `run_harbor_tasks` mode `validate`
+
+The same questions through Harbor, one trial per leg, as a run will see the task.
+
+```json
+run_harbor_tasks {"repo": "acme/tasks", "ref": "main", "paths": ["tasks/fix-rounding"], "mode": "validate"}
+```
+
+| Leg | Passes when |
+| --- | --- |
+| `oracle` | `solve.sh` scores 1.0 |
+| `null_arm` | No agent action scores below 1.0. A bundle graded under `gated-binary/1` must score exactly 0.0, with at least one fail-to-pass case, none of them passing, and every pass-to-pass case passing |
+| `probe_cheat` | The oracle with a non-solving `solve.sh` scores below 1.0 |
+| `probe_unsolved` | A seeded fault over the codebase scores below 1.0. Skipped, by name, when the bundle seeds no faults |
+
+Mode `full` adds one `conduct` rollout with the first model. It lands at `<task>/validate/<run id>/`.
+
+## Construction only: `prerun_validate`
+
+Taskforge's static checks on one bundle (structure, verifier setup, instruction and test quality), with no sandbox and no rollout. Returns passed, what is missing and what warns. A fast first look.

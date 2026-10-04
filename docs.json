@@ -32,47 +32,81 @@
     "eyebrows": "section"
   },
   "navigation": {
-    "pages": [
+    "tabs": [
       {
-        "group": "Getting started",
-        "pages": [
-          "overview",
-          "quickstart"
+        "tab": "Humboldt",
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": [
+              "overview",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Use Humboldt",
+            "pages": [
+              "sessions",
+              "slack",
+              "steering",
+              "asks",
+              "sandbox",
+              "models"
+            ]
+          },
+          {
+            "group": "Build with Humboldt",
+            "pages": [
+              "instructions",
+              "plugins",
+              "mcp-servers",
+              "language-servers",
+              "agent-teams",
+              "sub-agents",
+              "skills",
+              "hooks",
+              "unattended",
+              "personas"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "commands",
+              "in-a-session",
+              "configuration",
+              "troubleshooting"
+            ]
+          }
         ]
       },
       {
-        "group": "Use Humboldt",
-        "pages": [
-          "sessions",
-          "slack",
-          "steering",
-          "asks",
-          "sandbox",
-          "models"
-        ]
-      },
-      {
-        "group": "Build with Humboldt",
-        "pages": [
-          "instructions",
-          "plugins",
-          "mcp-servers",
-          "language-servers",
-          "agent-teams",
-          "sub-agents",
-          "skills",
-          "hooks",
-          "unattended",
-          "personas"
-        ]
-      },
-      {
-        "group": "Reference",
-        "pages": [
-          "commands",
-          "in-a-session",
-          "configuration",
-          "troubleshooting"
+        "tab": "Taskforge",
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": [
+              "taskforge/overview",
+              "taskforge/architecture",
+              "taskforge/quickstart"
+            ]
+          },
+          {
+            "group": "The loop",
+            "pages": [
+              "taskforge/authoring",
+              "taskforge/pre-run",
+              "taskforge/conduct",
+              "taskforge/post-run",
+              "taskforge/consult"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "taskforge/reference"
+            ]
+          }
         ]
       }
     ]

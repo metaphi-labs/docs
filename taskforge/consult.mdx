@@ -1,0 +1,47 @@
+---
+title: "Consult"
+description: "Some questions only a person can answer. A run asks you where you work, or asks experts on Slack, and goes on when nobody answers."
+---
+
+What a business rule is, what a team intended, whether a scenario could really happen: no check settles these. Consult brings them to a person and keeps the work going while the question is open.
+
+## In your session: `answer_task`
+
+A long tool returns a task. When the work behind it needs you (the forge in `run_agent_session` asks for discovery, review, a repository question or guidance), the task's status turns `input_required` and its `inputRequests` carry the questions.
+
+```json
+get_task    {"task_id": "<task id>"}
+answer_task {"task_id": "<task id>", "answers": {"q-…": "Round half to even; the ledger has always done so."}}
+```
+
+A client that speaks MCP Tasks puts the questions to you directly and answers with `tasks/update`. Any client can call `answer_task`.
+
+The session waits up to ten minutes for an answer, then withdraws the question and goes on without it. Every question and what came back is kept with the session at `agent-sessions/<session id>/`. The session's debrief comes back in its result, not as a question.
+
+## Experts on Slack: `ask_human`
+
+For teams that run an expert channel. Opens one question in a Slack thread and returns its id at once. A reply agent owns the thread to its close and banks each answer where the asking pass reads it.
+
+```json
+ask_human {"kind": "question",
+           "ask": "Does a refund issued after the cycle closes reopen the cycle?",
+           "context": "The reference fix assumes it does not; two cases depend on it.",
+           "repo": "acme/tasks", "task": "fix-rounding", "channel": "C0123"}
+```
+
+| Argument | Meaning |
+| --- | --- |
+| `kind` | `question`, `review` or `discovery` |
+| `ask`, `context` | The question (20 characters at least), and what was tried and why now (40 at least) |
+| `questions` | Questions to post verbatim, each with the test assertion its answer decides |
+| `repo`, `task` | Bank answers under `<task>/sme/` on the repository's runs |
+| `attachments` | Run directories packed into a redacted review bundle |
+| `channel` | Never guessed |
+
+`ask_sme_questions` opens one consult from a task's open yes/no questions (`<task>/sme/questions.json`), skipping answered ones. `read_consult` reads one thread whole; `list_consults` lists yours. Only you read your consults.
+
+## Parked passes
+
+When the model API turns a pass away, it parks with what it spent. `list_parked` shows yours; `resume_parked` respawns them once the API answers. A sweep does the same every fifteen minutes.
+
+The Slack tools and parked passes are on `kennet:l3`.
