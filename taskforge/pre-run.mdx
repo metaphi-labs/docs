@@ -114,7 +114,7 @@ run_harbor_tasks {"repo": "acme/tasks", "ref": "main", "paths": ["tasks/fix-roun
 | `oracle` | `solve.sh` scores 1.0 |
 | `null_arm` | No agent action scores below 1.0. A bundle graded under `gated-binary/1` must score exactly 0.0, with at least one fail-to-pass case, none of them passing, and every pass-to-pass case passing |
 | `probe_cheat` | The oracle with a non-solving `solve.sh` scores below 1.0 |
-| `probe_unsolved` | The bundle's first wrong solution (`tests/wrong/`) scores below 1.0. Skipped, by name, when the bundle offers none |
+| one per solution, named by its path (`tests/wrong/x.patch`) | A wrong solution scores below 1.0; a right solution scores 1.0. `solutions` is skipped, by name, when the bundle offers no wrong one |
 
 Mode `full` adds one `conduct` rollout with the first model. It lands at `<task>/validate/<run id>/`.
 
