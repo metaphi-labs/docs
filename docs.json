@@ -1,21 +1,21 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "willow",
-  "name": "Hum",
-  "description": "Hum documentation. Install, run a session, steer the work, build with plugins, tool servers and language servers.",
+  "name": "Metaphi AI",
+  "description": "Metaphi AI documentation. Hum, the agent you work with, and Kennet, the infrastructure for building and running RL environments.",
   "colors": {
     "primary": "#0b0b0a",
     "light": "#f1efe9",
     "dark": "#0b0b0a"
   },
   "logo": {
-    "light": "/logo/hum-light.svg",
-    "dark": "/logo/hum-dark.svg",
-    "href": "https://metaphi.ai/hum"
+    "light": "/logo/metaphi-light.svg",
+    "dark": "/logo/metaphi-dark.svg",
+    "href": "https://metaphi.ai"
   },
   "favicon": {
-    "light": "/logo/hum-favicon-light.svg",
-    "dark": "/logo/hum-favicon-dark.svg"
+    "light": "/logo/metaphi-favicon-light.svg",
+    "dark": "/logo/metaphi-favicon-dark.svg"
   },
   "fonts": {
     "heading": {
@@ -84,7 +84,7 @@
         ]
       },
       {
-        "tab": "Taskforge",
+        "tab": "Kennet",
         "groups": [
           {
             "group": "Getting started",
@@ -121,15 +121,9 @@
     ]
   },
   "navbar": {
-    "links": [
-      {
-        "label": "Metaphi AI",
-        "href": "https://metaphi.ai"
-      }
-    ],
     "primary": {
       "type": "button",
-      "label": "Install",
+      "label": "Install Hum",
       "href": "https://docs.metaphi.ai/quickstart#1-install"
     }
   },
