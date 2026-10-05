@@ -105,6 +105,12 @@
             ]
           },
           {
+            "group": "Traces",
+            "pages": [
+              "taskforge/anonymize"
+            ]
+          },
+          {
             "group": "Reference",
             "pages": [
               "taskforge/reference"

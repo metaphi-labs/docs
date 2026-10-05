@@ -1,0 +1,95 @@
+---
+title: "Anonymize traces"
+description: "Connect Kennet to your agent, then turn an agent trace into a synthetic twin: every person, private organisation, account and secret replaced, the structure kept."
+---
+
+Kennet anonymizes agent traces for you to keep, share or train on. Each real value is replaced at every place it occurs with one consistent synthetic value of the same kind, so the trace still parses, references still resolve, and a name that appears forty times is the same new name forty times.
+
+You run it from your own agent (Claude Code, Codex, Cursor, Hum, or any MCP client). Nothing is installed.
+
+## 1. Connect
+
+Add the server to your agent. In Claude Code:
+
+```
+claude mcp add --transport http kennet https://kennet.metaphi.ai/mcp/
+```
+
+Any MCP client takes the same URL: `https://kennet.metaphi.ai/mcp/`.
+
+## 2. Sign in
+
+Authenticate the server from your agent (in Claude Code: `/mcp`, choose `kennet`, then Authenticate). Your browser opens on `app.metaphi.ai`. Sign in with Google or GitHub.
+
+The first time, your account has no access yet: choose **Request access**. You get an email when it is approved; then authenticate again and choose **Allow**.
+
+Your agent now lists five tools: `upload_trace`, `anonymize_trace`, `pull_trace`, `get_task` and `cancel_task`.
+
+## 3. Anonymize a trace
+
+Ask your agent in plain words, from the directory that holds the file:
+
+```
+Anonymize trace.json with kennet and save the result here.
+```
+
+It makes three calls. They are shown so you know what happens.
+
+```json
+upload_trace {"filename": "trace.json"}
+```
+
+Returns a `curl` command and an `upload_id`. Your agent runs the command in your shell, which uploads the file. The URL answers for 10 minutes. A trace is JSON, JSON Lines or text.
+
+```json
+anonymize_trace {"upload_id": "<upload id>"}
+```
+
+Returns a task. Poll `get_task` until it ends; a trace takes a few minutes. The result carries the report, the table of what became what, and `output_path`.
+
+```json
+pull_trace {"trace_path": "<output_path>"}
+```
+
+Returns a `curl` command that downloads the anonymized trace into your working directory. Pass `report_path` the same way for the report.
+
+## What is replaced
+
+| Kind | What happens |
+| --- | --- |
+| People | Always replaced: names, emails, phone numbers, addresses, handles |
+| Private organisations | Replaced, with everything that names them |
+| Accounts and identifiers | Replaced with a value of the same shape |
+| Secrets | Replaced: keys, tokens, passwords |
+| Listed public companies | Kept, with their brands, subsidiaries and tickers, unless you name them confidential |
+
+After the replacement a second reader, shown only the output, looks for anything still real; one repair round follows. What it still finds is listed in the report as residuals.
+
+## Options
+
+| Argument | Use |
+| --- | --- |
+| `key` | 64 hex characters. The same key gives one person the same synthetic value in every trace of a corpus. Leave it empty for a fresh key per trace |
+| `confidential` | Organisations to treat as confidential although public, such as your client. Each is replaced with everything that names it |
+
+```json
+anonymize_trace {"upload_id": "<upload id>", "key": "<64 hex characters>",
+                 "confidential": ["Acme Holdings"]}
+```
+
+Keep the key if you will anonymize more traces of the same corpus later. Kennet does not keep it.
+
+## What Kennet keeps
+
+- Your upload is deleted as soon as the output is written. If the run fails it is kept, so the run can be looked at.
+- The output and the report stay under your account until you pull them; nobody else's account reaches them.
+- The table of what became what is returned to you and never stored.
+
+## When something goes wrong
+
+| You see | Do this |
+| --- | --- |
+| "does not have access" on the sign-in page | Choose **Request access** and wait for the email |
+| The upload URL has expired | Call `upload_trace` again; a URL answers for 10 minutes |
+| The task ends `failed` | Read `error` in the report (`pull_trace` with `report_path`), then run it again |
+| Residuals in the report | Read them: each is a value the second reader thought still real. Add the organisation to `confidential`, or replace the value by hand |
