@@ -22,42 +22,35 @@ Three stages, cheapest first:
 | Screen | `harbor_config`, `agent_network`, `solve_sh_runnable`, `test_setup_runnable`, `instruction_leakage`, `instruction_private_details` | No, but a failure holds every sandbox back |
 | | `harbor_structure`, `dockerfile_sanity`, `solution_format`, `test_file_references` | Advisory |
 | Audits | `task_reference`, `task_eval_signal`, `instruction_flags`, `test_not_fragile`, `test_data_driven`, `test_quality` | Never: recorded as advice in `gate.advisory_failed` |
-| Arms | `bundle_shape`, `cross_case_distinct`, `bundle_private_details` (read off the files) | Yes |
-| | The sandboxed arms below, run only where the screen passed, and `reward_readable`, read off the oracle's own trials | Yes |
+| Validate | `bundle_shape`, `bundle_private_details` (read off the files) | Yes |
+| | The sandboxed checks below, run only where the screen passed | Yes |
 
-| Arm | Proves |
+| Check | Proves |
 | --- | --- |
-| oracle | The reference solution scores 1.0. Run three times; the repeats must agree |
-| null | The untouched codebase scores below 1.0. Run three times |
-| baseline | Every case that fails on the untouched code fails on an observable it declared, never on an infrastructure reason; at least one case is fail-to-pass; no case passes on the untouched code and fails with the reference applied |
-| seeded fault | Every wrong solution is caught by a case, and every right solution scores 1.0. One sandbox per solution; the most expensive arm |
-| adversarial | Rewriting every file outside the declared deliverable cannot reach the reward |
+| `oracle` | The reference solution scores 1.0 |
+| `null_arm` | The untouched codebase scores below 1.0 |
+| `probe_cheat` | A non-solving `solve.sh` scores below 1.0 |
+| `solutions` | Every wrong solution under `tests/wrong/` scores below 1.0 and every right solution under `tests/right/` scores 1.0. One sandbox per solution |
+| `cases` | Where the verifier reports per case: no case passes on the untouched code and fails with the reference applied |
 
 What the newer checks ask:
 
 | Check | Fails when |
 | --- | --- |
 | `agent_network` | The agent phase can reach a network. Harbor's `[environment] network_mode` defaults to `public`, so set `[agent] network_mode = "no-network"` (or `[environment] allow_internet = false`). A task that needs a network declares the mode and says why under `[metadata] network_reason` |
-| `reward_readable` | A reward file the oracle published (`/logs/verifier/reward.txt` or `reward.json`) is not readable by a non-root reader, as with `tempfile.mkstemp` (mode 0600). Harbor's local Docker backend then cannot read the reward. Write it world-readable |
-| `solve_sh_runnable` | `solve.sh` is missing, fails `bash -n`, or runs no command (only comments, `echo` or blank lines). Any command counts; whether it solves the task is the oracle arm's |
+| `solve_sh_runnable` | `solve.sh` is missing, fails `bash -n`, or runs no command (only comments, `echo` or blank lines). Any command counts; whether it solves the task is the `oracle` check's |
 | `bundle_shape` | Besides an undeclared entry, any editor or patch leftover anywhere in the bundle: `*-E` (BSD `sed -i`), `*.orig`, `*.rej`, `*~`, `.*.swp`, `.DS_Store`. A bundle is held to a grading interface's shape only when it declares one: `recorded` is declared by a `case.json` in each case directory (`tests/cases/<case>/case.json`). A bundle that declares none, whatever directories it carries, gets the generic shape |
 | `instruction_flags` (advisory) | Flag `hidden_interface`: the tests depend on a symbol, signature, CLI or path that `instruction.md` never states |
 
-The oracle arm runs the bundle exactly as shipped, through Harbor's own oracle agent, so a reference that touches a path missing from `environment/` scores 0 there.
+The `oracle` check runs the bundle exactly as shipped, through Harbor's own oracle agent, so a reference that touches a path missing from `environment/` scores 0 there.
 
-`eval_ready` is a claim about what ran: the screen passed, every arm ran and passed, and every soundness leg measured something. Nothing excuses a finding. Pass `arms: false` to screen and audit only; that run is never `eval_ready`. Anything short of `eval_ready` names what refused in `gate.blocking_checks`, `gate.unmeasured` and `gate.reason`.
+`eval_ready` is a claim about what ran: the screen passed, every check above ran and passed, and the bundle offered at least one wrong solution. Nothing excuses a finding. Pass `arms: false` to screen and audit only; that run is never `eval_ready`. These are the same sandboxed checks `run_harbor_tasks` runs in mode `validate`; their report and trial trees land under `<task>/ci/<run id>/validate/`.
 
 ## Soundness
 
-A reward is sound when every right solution scores 1.0 and every wrong one scores below 1.0. Unknown is red: a soundness leg that measured nothing holds `eval_ready` back exactly as a failure does.
+A reward is sound when every right solution scores 1.0 and every wrong one scores below 1.0. Unknown is red: a bundle that offers no wrong solution measured nothing, and `eval_ready` is held back exactly as a failure holds it.
 
-| Soundness leg | Measured when | `gate.reason` when not |
-| --- | --- | --- |
-| `oracle` | The reference solution was graded | `the reference solution was not graded` |
-| `null_arm` | The untouched code was graded | `the untouched code was not graded` |
-| `seeded_fault_arm` | The bundle offers at least one wrong solution, and each was graded | `no wrong solutions offered` |
-
-`gate.soundness_legs` lists the three, `gate.unmeasured` the ones that measured nothing, and `gate.reason` says what is missing in one sentence, for example `no wrong solutions offered: see https://docs.metaphi.ai/taskforge/pre-run#soundness`.
+`gate.unmeasured` names `solutions` and `gate.reason` reads `no wrong solutions offered: see https://docs.metaphi.ai/taskforge/pre-run#soundness`.
 
 ### Wrong and right solutions
 
@@ -81,23 +74,23 @@ Two formats, the same for both kinds:
 
 The working directory is the one Harbor runs the reference in: `[environment] workdir`, else the Dockerfile's `WORKDIR`. A task whose agent writes an answer rather than changing code uses an overlay holding that answer, for example `tests/wrong/sign-flipped/answer.json` where the working directory is `/workspace` and the verifier reads `/workspace/answer.json`.
 
-Each solution replaces the reference in a copy of the bundle and runs through Harbor's oracle agent and the bundle's own verifier, in a sandbox of its own. A wrong solution passes when a case rejects it (with no per-case report, when the reward is below 1.0). A right solution passes at 1.0. A solution that does not apply (a patch that fails, a copy that errors) fails the arm; it is never counted as caught. Anything else under `tests/wrong` or `tests/right` (a loose file that is not a patch) fails the arm by name.
+Each solution replaces the reference in a copy of the bundle and runs through Harbor's oracle agent and the bundle's own verifier, in a sandbox of its own. A wrong solution passes when a case rejects it (with no per-case report, when the reward is below 1.0). A right solution passes at 1.0.
 
-At least one wrong solution is required. Right solutions are optional (the reference is the one the oracle arm measures), but each one offered must score 1.0. A wrong solution that survives means a case is missing: add the case. A right solution that fails means a case grades the shape of the code.
+At least one wrong solution is required. Right solutions are optional (the reference is the one the `oracle` check measures), but each one offered must score 1.0. A wrong solution that survives means a case is missing: add the case. A right solution that fails means a case grades the shape of the code.
 
 Older bundles keep solutions beside the bundle, as `faults/<name>/` (wrong) and `variants/<name>/` (right) next to `<problem>/harbor/`, overlays only. They are still read. The report records each solution's `source` and `format`.
 
 ### Fail-to-pass and pass-to-pass
 
-The baseline arm derives both from the oracle and null runs. A bundle states neither.
+The validate run derives both from its oracle and null runs. A bundle states neither.
 
 | Case | Untouched code | Reference applied |
 | --- | --- | --- |
 | fail-to-pass | fails, or never reported | passes |
 | pass-to-pass | passes | passes |
-| regressed (fails the baseline) | passes | fails, or never reported |
+| regressed (fails `cases`) | passes | fails, or never reported |
 
-The cases are the rows of the verifier's own report in `/logs/verifier/` (`grade.json` or `report.json`), or the tests of `ctrf.json`, which `pytest --ctrf /logs/verifier/ctrf.json` writes. The report's `baseline_arm` lists `fail_to_pass`, `pass_to_pass` and `regressed`.
+The cases are the rows of the verifier's own report in `/logs/verifier/` (`grade.json` or `report.json`), or the tests of `ctrf.json`, which `pytest --ctrf /logs/verifier/ctrf.json` writes. The report's `cases` check lists `fail_to_pass`, `pass_to_pass` and `regressed`.
 
 A verifier that writes the reward alone is read at that grain: the reference scores 1.0 and the untouched code less. A task with no prior behaviour (the agent writes an answer from its inputs) needs nothing more.
 
