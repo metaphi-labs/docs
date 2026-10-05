@@ -29,9 +29,8 @@ Three stages, cheapest first:
 | --- | --- |
 | oracle | The reference solution scores 1.0. Run three times; the repeats must agree |
 | null | The untouched codebase scores below 1.0. Run three times |
-| baseline | Every case that fails on the untouched code fails on an observable it declared, never on an infrastructure reason, and at least one case discriminates |
+| baseline | Every case that fails on the untouched code fails on an observable it declared, never on an infrastructure reason; at least one case is fail-to-pass; no case passes on the untouched code and fails with the reference applied |
 | seeded fault | Every wrong solution is caught by a case, and every right solution scores 1.0. One sandbox per solution; the most expensive arm |
-| pass-to-pass | The behaviour the change must keep held with the reference applied and on the untouched code |
 | adversarial | Rewriting every file outside the declared deliverable cannot reach the reward |
 
 What the newer checks ask:
@@ -88,17 +87,19 @@ At least one wrong solution is required. Right solutions are optional (the refer
 
 Older bundles keep solutions beside the bundle, as `faults/<name>/` (wrong) and `variants/<name>/` (right) next to `<problem>/harbor/`, overlays only. They are still read. The report records each solution's `source` and `format`.
 
-### Pass-to-pass
+### Fail-to-pass and pass-to-pass
 
-The verifier reports whether the behaviour the change must keep still holds. The arms read it, in this order:
+The baseline arm derives both from the oracle and null runs. A bundle states neither.
 
-1. The `pass_to_pass` key of `/logs/verifier/reward.json`: `1` (or any number at or above 1.0) when every pass-to-pass case held, less when one broke.
-2. `/logs/verifier/p2p.txt`: `1` or `pass` when they held, `0` or `fail` when not.
-3. Per-case rows of `grade.json` or `report.json` in `/logs/verifier/` whose `kind` is `pass_to_pass`.
+| Case | Untouched code | Reference applied |
+| --- | --- | --- |
+| fail-to-pass | fails, or never reported | passes |
+| pass-to-pass | passes | passes |
+| regressed (fails the baseline) | passes | fails, or never reported |
 
-`ctrf.json` alone reports no pass-to-pass outcome: its rows carry no kind. Write `p2p.txt` beside it.
+The cases are the rows of the verifier's own report in `/logs/verifier/` (`grade.json` or `report.json`), or the tests of `ctrf.json`, which `pytest --ctrf /logs/verifier/ctrf.json` writes. The report's `baseline_arm` lists `fail_to_pass`, `pass_to_pass` and `regressed`.
 
-It must hold with the reference applied and on the untouched code: a reported failure on either side blocks `eval_ready`. A verifier that reports none (the agent writes an answer from its inputs, so there is no prior behaviour) is recorded `skipped` and holds nothing back.
+A verifier that writes the reward alone is read at that grain: the reference scores 1.0 and the untouched code less. A task with no prior behaviour (the agent writes an answer from its inputs) needs nothing more.
 
 ## Validate: `run_harbor_tasks` mode `validate`
 
