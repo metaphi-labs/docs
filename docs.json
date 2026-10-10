@@ -137,8 +137,7 @@
             "group": "Concepts",
             "pages": [
               "harwell/batch-runs",
-              "harwell/online-runs",
-              "harwell/fidelity"
+              "harwell/online-runs"
             ]
           },
           {

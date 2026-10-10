@@ -1,18 +1,27 @@
 ---
 title: "Validation"
-description: "Two public mainframe applications, read and compiled by Harwell 0.31.0 at pinned commits: what each number measures, what was refused and why, and what is not measured."
+description: "Results of Harwell 0.31.0 on two public mainframe applications at pinned commits: parsing, compilation and transaction start."
 ---
 
-## Public reference codebases
+Harwell is validated on two public mainframe applications, each pinned to a commit. You can retrieve the same source and reproduce the results. Harwell CI recomputes every result except transactions started on each change.
 
-Two public applications, pinned to a commit. Harwell's readers count what they read and name what they did not understand; the compile row compiles every program member; transactions started runs them. Anyone can fetch the same bytes and get the same numbers, and CI re-derives all but the last on every push.
+**Topics**
 
-| | Repository | Commit | Character |
+- [Reference applications](#reference-applications)
+- [Results](#results)
+- [Measures](#measures)
+- [Rejected members](#rejected-members)
+
+## Reference applications
+
+| Application | Repository | Commit | Profile |
 | --- | --- | --- | --- |
 | AWS CardDemo | `aws-samples/aws-mainframe-modernization-carddemo` | `59cc6c2` | Batch-heavy: 61 decks, 62 IDCAMS streams, DFSORT and IEBGENER steps, 21 BMS mapsets, 25 online members, embedded SQL, an IMS variant |
 | GenApp | `cicsdev/cics-genapp` | `f6f3f4b` | Online: 500 `EXEC CICS` blocks |
 
-At those commits, on Harwell 0.31.0:
+## Results
+
+The following results were measured with Harwell 0.31.0 at the commits above.
 
 | Measure | CardDemo | GenApp |
 | --- | --- | --- |
@@ -21,35 +30,35 @@ At those commits, on Harwell 0.31.0:
 | text left opaque | 0 | 0 |
 | `EXEC CICS` blocks / executed | 240 / 240 | 500 / 500 |
 | `EXEC SQL` blocks read and accepted | 33 of 33 | 56 of 56 |
-| JCL decks read (refused) | 61 (0) | 29 (0) |
+| JCL decks read (rejected) | 61 (0) | 29 (0) |
 | JCL statements | 2,829 | 786 |
 | IDCAMS commands / commands Harwell runs | 102 / 102 | 14 / 14 |
 | BMS mapsets / maps / fields | 21 / 21 / 1,166 | 1 / 6 / 279 |
 | program members attempted | 44 | 31 |
 | **compiled clean** | **31** | **30** |
-| refused, each named | 13 | 1 |
+| rejected, each with its reason | 13 | 1 |
 | transactions in the region | 30 | 10 |
 | of those, naming a program the codebase holds | 24 | 10 |
 | **transactions started** (measured by hand) | **16** | **8** |
 
-### What each measure means
+## Measures
 
-| Measure | Means | Does not mean |
-| --- | --- | --- |
-| Read, accepted | The reader named the statement and left no text opaque | That the statement ran |
-| Compiled clean | The member compiled with no diagnostic | That it ran, or ran correctly |
-| Transactions started | Started with one attention and nothing typed: the task attached, its first program ran, and it reached a SEND or a RETURN | That the transaction is correct past its first screen |
+| Measure | Definition |
+| --- | --- |
+| Read, accepted | Harwell parsed the statement and left no text unparsed |
+| Compiled clean | The member compiled with no diagnostic message |
+| Transactions started | The transaction started with one attention key and no input: the task attached, its first program ran, and it reached a SEND or a RETURN |
 
-Transactions started is the one number CI does not re-derive. It was measured by hand, on GnuCOBOL 3.2 without the SQL preprocessor.
+Transactions started was measured manually, on GnuCOBOL 3.2 without the SQL preprocessor.
 
-### What was refused, and why
+## Rejected members
 
-| Corpus | Refused | Count |
+| Application | Reason | Count |
 | --- | --- | --- |
 | CardDemo compile | `EXEC DLI`: there is no IMS translator, so the block reaches the compiler untranslated | 5 |
 | CardDemo compile | MQ copy members (`CMQ*`) CardDemo does not ship | 3 |
 | CardDemo compile | A construct the dialect normaliser does not handle | 3 |
-| CardDemo compile | The SQL preprocessor refused the member | 2 |
+| CardDemo compile | The SQL preprocessor rejected the member | 2 |
 | GenApp compile | `lgwebst5.cbl`: `PROGRAM-ID. LGWEBST5` has no terminating period | 1 |
 | CardDemo start | The first program would not compile | 6 |
 | CardDemo start | The transaction's program is in no library of the codebase | 6 |
@@ -57,14 +66,7 @@ Transactions started is the one number CI does not re-derive. It was measured by
 | GenApp start | The first program would not compile | 1 |
 | GenApp start | The task ended before its first SEND or RETURN | 1 |
 
-## What is not measured
+## Related information
 
-- **No conformance result.** IBM does not publish a suite for this platform, and nobody else does either. The public numbers are a corpus sweep.
-- **No batch run census on the public codebases.** Neither ships its data in runnable form, so a count of decks that run green would measure the staging, not Harwell.
-- **No VSAM, IMS, security or spool sweep.** Neither public codebase carries PL/I, sizeable assembler, Natural, ADABAS, ICETOOL, `JOINKEYS` or a scheduler table; those are covered by unit tests and no public number.
-- **No throughput or capacity number.** Nothing measures records per second.
-
-## Next
-
-- [Known limits](/harwell/known-limits)
-- [Get started](/harwell/evaluate)
+- [Supported features](/harwell/what-runs)
+- [Known limitations](/harwell/known-limits)

@@ -1,27 +1,39 @@
 ---
-title: "Known limits"
-description: "Where Harwell 0.41.0 differs from the mainframe, how a run shows it, and what to do about it."
+title: "Known limitations"
+description: "Where Harwell 0.41.0 behaves differently from z/OS, how the report shows each difference, and the workaround."
 ---
 
-How a run surfaces a gap is described in [Fidelity](/harwell/fidelity). Harwell's source lists 72 known places where it does not do what the mainframe does, each with a workaround. A fixed one leaves the list. Each has a stable name, its `kind`.
+This topic lists the known differences between Harwell 0.41.0 and z/OS. Each limitation has a stable identifier, its `kind`, and a workaround. A limitation is removed from this list in the release that resolves it.
 
-## How a run shows it
+**Topics**
 
-| On the report | Means |
+- [How the report shows a limitation](#how-the-report-shows-a-limitation)
+- [COBOL and data](#cobol-and-data)
+- [Batch: JCL and utilities](#batch-jcl-and-utilities)
+- [Db2 on SQLite](#db2-on-sqlite)
+- [VSAM](#vsam)
+- [Online: CICS and BMS](#online-cics-and-bms)
+- [Limitations not shown in the report](#limitations-not-shown-in-the-report)
+
+## How the report shows a limitation
+
+| Indication | Description |
 | --- | --- |
-| **Declared** | The kind is on `fidelity.divergences` with its job, step, program, data set, member and line, and `fidelity.status` reads `degraded`. Eleven kinds are declared |
-| **Refused** | The step or job is refused by name, with the reason and a return code. Nothing is written |
-| **Named** | Not a divergence entry, but the report names it elsewhere: a neutralised command, a stub, an engine note on the step, an assembler warning, an abend |
-| **Not shown** | Nothing on the report marks it. These are in [the last section](#not-detectable-in-a-run); check your code against them yourself |
+| **Declared** | The run reached the construct. The `kind` is in `fidelity.divergences` with the job, step, program, data set, member and line, and `fidelity.status` is `degraded`. |
+| **Rejected** | The step or job is rejected by name, with the reason and a return code. No output is written. |
+| **Named** | The report names the construct elsewhere: a command answered without running, a stub, a message on the step, an assembler warning, or an abend code. |
+| **Not shown** | The report does not indicate the limitation. See [Limitations not shown in the report](#limitations-not-shown-in-the-report). |
 
-`fidelity.status: clean` means nothing was stubbed or neutralised and no declared kind was reached. It does not rule out the rows marked not shown.
+<Note>
+`fidelity.status: clean` means that the run replaced no call with a stub, answered no command without running it, and reached no declared limitation. It does not cover the limitations that the report does not show.
+</Note>
 
 ## COBOL and data
 
-| Symptom | How a run shows it | Workaround |
+| Symptom | How the report shows it | Workaround |
 | --- | --- | --- |
 | A file declared only in a CALLed subprogram bypasses the code-set conversion and the record-length check | Declared `callee-declared-file` | Add the SELECT to the main program, or keep the file ASCII-staged with FD and DCB agreeing |
-| A fixed FD whose record length the LRECL contradicts: the mainframe fails the OPEN with status 39; here the step is refused before the program runs, rc 12 | Declared `fixed-attribute-conflict` | Make LRECL agree with the FD, or code `RECORD CONTAINS 0` |
+| A fixed FD whose record length the LRECL contradicts: the mainframe fails the OPEN with status 39; Harwell rejects the step before the program runs, rc 12 | Declared `fixed-attribute-conflict` | Make LRECL agree with the FD, or code `RECORD CONTAINS 0` |
 | A card with an asterisk in columns 1 to 6 is read as a comment and commented out | Declared `sequence-area-asterisk` | Check the member is card-formatted |
 | A letter written into a zoned digit during the run ends the step S0C7 | Named: the step's abend | Seed zoned fields with digits; declare text `PIC X` (`zoned-invalid-digit`) |
 | MOVE or numeric compare of invalid zoned or packed data ends S0C7 where a NOINVDATA site may not | Named: the step's abend | Keep invalid bytes out of moved and compared fields (`move-invalid-data`, `compare-invalid-digits`) |
@@ -29,35 +41,35 @@ How a run surfaces a gap is described in [Fidelity](/harwell/fidelity). Harwell'
 
 ## Batch: JCL and utilities
 
-| Symptom | How a run shows it | Workaround |
+| Symptom | How the report shows it | Workaround |
 | --- | --- | --- |
 | Two chain jobs no dependency orders, sharing a data set one holds exclusively, run one after the other | Declared `concurrent-jobs` | Order dependent jobs explicitly |
-| Checkpoint restart, `RESTART=(step,checkid)` | Refused: the job is not run; the deck warning says why | Restart at a step boundary (`checkpoint-restart`) |
+| Checkpoint restart, `RESTART=(step,checkid)` | Rejected: the job is not run; the deck warning says why | Restart at a step boundary (`checkpoint-restart`) |
 | A step's task library the run does not carry is passed over, not failed at allocation | Named: the step's `load_module.task_library` | Declare load libraries as system libraries (`program-fetch`) |
-| DFSORT: a format or test owned by another component, an unnormalised `FL` key, `Y2` in INCLUDE/OMIT, an unstated installation option, a non-COBOL exit | Refused, rc 8 or 16 | Declare the field in a format the comparator decodes; state site options in `harwell.toml` (`sort-foreign-format`, `sort-fl-free-form`, `sort-y2-condition`, `sort-installation-option`, `sort-exits`) |
-| DFSORT: invalid decimal digit under an edit or conversion | Refused, rc 16, naming the field and its bytes | Run ICETOOL VERIFY over the field first (`sort-invalid-digit`) |
-| A control card in a library the codebase lacks | Refused, rc 16, naming the DD and data set | Add the member (`missing-control-card`) |
-| DSNUTILB LOAD with no field specifications over an unsupported type; unload option words | Refused, rc 8 | State `POSITION` field specs; remove the options (`load-default-layout`, `unload-options`) |
+| DFSORT: a format or test owned by another component, an unnormalised `FL` key, `Y2` in INCLUDE/OMIT, an unstated installation option, a non-COBOL exit | Rejected, rc 8 or 16 | Declare the field in a format the comparator decodes; state site options in `harwell.toml` (`sort-foreign-format`, `sort-fl-free-form`, `sort-y2-condition`, `sort-installation-option`, `sort-exits`) |
+| DFSORT: invalid decimal digit under an edit or conversion | Rejected, rc 16, naming the field and its bytes | Run ICETOOL VERIFY over the field first (`sort-invalid-digit`) |
+| A control card in a library the codebase lacks | Rejected, rc 16, naming the DD and data set | Add the member (`missing-control-card`) |
+| DSNUTILB LOAD with no field specifications over an unsupported type; unload option words | Rejected, rc 8 | State `POSITION` field specs; remove the options (`load-default-layout`, `unload-options`) |
 
 ## Db2 on SQLite
 
-| Symptom | How a run shows it | Workaround |
+| Symptom | How the report shows it | Workaround |
 | --- | --- | --- |
 | A USA or EUR date written into a DATE column of a table a job step creates | Named: the step's engine notes | Declare the table in the seed, or write YYYY-MM-DD (`runtime-table-date-form`) |
 | Decimal arithmetic over an operand of a type the precompiler does not list falls back to SQLite arithmetic | Named: the step's engine notes | Declare host variables of listed types (`sql-decimal-untyped-operand`) |
-| `DIGITS` of an expression of unstated type | Refused by name | Wrap the operand in `DECIMAL(...)` or `INTEGER(...)` (`digits-untyped-expression`) |
-| LANGUAGE SQL procedures; FETCH SENSITIVE and partial rowset access | Refused by name | Keep procedures external COBOL; declare scrollable cursors INSENSITIVE (`stored-procedure`, `sensitive-scroll-and-row-of-rowset`) |
-| `AS IDENTITY`, `WITH DEFAULT`, a qualified `REFERENCES`, `FOR BIT DATA` in DDL a job runs | Refused by name, rc 8 | Seed such tables up front (`db2-storage-ddl`) |
+| `DIGITS` of an expression of unstated type | Rejected by name | Wrap the operand in `DECIMAL(...)` or `INTEGER(...)` (`digits-untyped-expression`) |
+| LANGUAGE SQL procedures; FETCH SENSITIVE and partial rowset access | Rejected by name | Keep procedures external COBOL; declare scrollable cursors INSENSITIVE (`stored-procedure`, `sensitive-scroll-and-row-of-rowset`) |
+| `AS IDENTITY`, `WITH DEFAULT`, a qualified `REFERENCES`, `FOR BIT DATA` in DDL a job runs | Rejected by name, rc 8 | Seed such tables up front (`db2-storage-ddl`) |
 
 ## VSAM
 
-| Symptom | How a run shows it | Workaround |
+| Symptom | How the report shows it | Workaround |
 | --- | --- | --- |
 | KSDS key order is ASCII on a toolchain without the collation patch | Declared `indexed-key-order` | Run on the published toolchain |
 
 ## Online: CICS and BMS
 
-| Symptom | How a run shows it | Workaround |
+| Symptom | How the report shows it | Workaround |
 | --- | --- | --- |
 | A started task runs after the task that started it, not beside it | Declared `cics-start` | Check its effect on the next screen |
 | ENQ is always granted: one task runs at a time | Declared `cics-enq` | Check that the right resource was enqueued |
@@ -65,16 +77,16 @@ How a run surfaces a gap is described in [Fidelity](/harwell/fidelity). Harwell'
 | A task killed by a signal is not backed out | Declared `cics-task-signal` | Treat its files and queues as written |
 | The case's screens and the tasks did not meet | Declared `cics-terminal-input` | Give every attention the user makes, in order, the entry included |
 | A sockets client was replayed, or a sockets call is not modelled | Declared `cics-sockets` | Script each client's whole conversation |
-| A mapset with no macro source; a field off the map | Named: APCT abend; the assembler refuses by name | Ship the `.bms` (`bms-map`) |
+| A mapset with no macro source; a field off the map | Named: APCT abend; the assembler rejects the mapset by name | Ship the `.bms` (`bms-map`) |
 | `INITIAL=` longer than `LENGTH=` is cut | Named: an assembler warning with both lengths | Correct the source (`bms-initial-length`) |
-| A remote transient data queue | Refused by name | Declare the local queue it stands for (`cics-transient-data`) |
+| A remote transient data queue | Rejected by name | Declare the local queue it stands for (`cics-transient-data`) |
 | A unit of work past its size bound | Named: NOSPACE on the command | Syncpoint inside long loops (`cics-uow-size`) |
-| DCOUNTER; INQUIRE and SET other than INQUIRE PROGRAM; SEND TEXT paging; GET CONTAINER conversion | Named: neutralised commands on the step | Use COUNTER; branch on EIBRESP; convert in the program (`cics-dcounter`, `cics-inquire`, `cics-send-text`, `cics-container-conversion`) |
-| CEMT SET on an attribute or resource it does not take | Refused by name | Read other attributes off the definition (`cics-supplied`) |
+| DCOUNTER; INQUIRE and SET other than INQUIRE PROGRAM; SEND TEXT paging; GET CONTAINER conversion | Named: commands answered without running, on the step | Use COUNTER; branch on EIBRESP; convert in the program (`cics-dcounter`, `cics-inquire`, `cics-send-text`, `cics-container-conversion`) |
+| CEMT SET on an attribute or resource it does not take | Rejected by name | Read other attributes off the definition (`cics-supplied`) |
 
-## Not detectable in a run
+## Limitations not shown in the report
 
-Nothing on the report marks these. Each is a reading of storage, timing or output that a run cannot make.
+The report does not indicate the following limitations, because a run cannot observe them. Check your code against them.
 
 | Symptom | Kind | Workaround |
 | --- | --- | --- |
@@ -98,7 +110,7 @@ Nothing on the report marks these. Each is a reading of storage, timing or outpu
 | The engine's own modules (`DFH*`, some LE services, `MVSWAIT`) never appear as stubs; no time passes | `engine-modules` | Set the clock when time must pass |
 | Comparing output: two encodings of one figure; REDEFINES branches and group OCCURS | `decoded-field-compare`, `layout-redefines-occurs` | Compare whole records byte for byte |
 
-## Next
+## Related information
 
-- [The report](/harwell/report)
-- [Get started](/harwell/evaluate)
+- [Supported features](/harwell/what-runs)
+- [Report reference](/harwell/report-reference#fidelity)

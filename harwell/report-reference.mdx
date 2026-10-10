@@ -1,9 +1,14 @@
 ---
 title: "Report reference"
-description: "Every key of the run report, as of Harwell 0.41.0, report format 1. Generated from the report's JSON schema."
+description: "Every key of the Harwell 0.41.0 run report, format 1, with its type and whether it is required. Generated from the report's JSON schema."
 ---
 
-The report's format number is `report: 1`. It moves only when a required key is renamed, removed or changes meaning, never for an added key. Additional keys are allowed at every level. "Required" keys are the ones a reader may rely on; the rest may be absent. `[]` marks an array's items.
+This topic describes every key of the run report, format 1.
+
+- The format number is `report: 1`. It changes only when a required key is renamed, is removed or changes meaning. It does not change when a key is added.
+- Any object can contain additional keys.
+- A required key is always present. Other keys can be absent.
+- `[]` denotes the items of an array.
 
 ## Top level
 
@@ -190,7 +195,7 @@ The report's format number is `report: 1`. It moves only when a required key is 
 | `containment.job_uid` | integer | yes | The uid the job ran as. |
 | `containment.job_uids` | array | yes | The first and last uid of the range job users are taken from. |
 
-## Next
+## Related information
 
-- [The report](/harwell/report)
+- [Run report](/harwell/report)
 - [Known limits](/harwell/known-limits)

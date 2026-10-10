@@ -1,28 +1,36 @@
 ---
-title: "What runs"
-description: "What Harwell 0.41.0 executes, what it reads and does not act on, and what it refuses, for batch, for online, and for the data both share. None is skipped silently."
+title: "Supported features"
+description: "The z/OS batch, CICS and data constructs that Harwell 0.41.0 supports, does not process, or rejects."
 ---
 
-Every construct has one of three statuses:
+This topic lists the constructs that Harwell supports for batch jobs, CICS transactions and shared data. Each construct has one of the following statuses:
 
-| Status | Means |
+| Status | Description |
 | --- | --- |
-| **Runs** | Executed |
-| **Not acted on** | Read and answered without running, or read and not modelled. Named on the report; a neutralised command or stub makes the run `degraded` |
-| **Refused** | Refused by name with the reason. The step or job does not run it |
+| **Supported** | Harwell runs the construct. |
+| **Not processed** | Harwell accepts the construct and does not run it. The report names it. A command answered without running, or a call replaced by a stub, sets `fidelity.status` to `degraded`. |
+| **Rejected** | Harwell rejects the construct by name and gives the reason. The step or job does not run it. |
+| **Not supported** | Harwell has no implementation of the construct. |
 
-A row this page does not list has no status in Harwell's reference. Where Harwell runs a construct differently from the mainframe, it is in [Known limits](/harwell/known-limits).
+For constructs that Harwell runs with known differences from z/OS, see [Known limitations](/harwell/known-limits).
 
-## Levels
+**Topics**
 
-| Area | What Harwell follows |
+- [Reference levels](#reference-levels)
+- [Batch](#batch)
+- [Online](#online)
+- [Shared data](#shared-data)
+
+## Reference levels
+
+| Area | Reference |
 | --- | --- |
-| COBOL | IBM dialect: GnuCOBOL 3.2 with `cobc -std=ibm -fno-arithmetic-osvs -fec=EC-DATA-INCOMPATIBLE`, patched for IBM numeric behaviour. Where it differs, the difference is cited to the Enterprise COBOL for z/OS 6.4 manuals |
-| CICS | Commands, conditions, abend codes and EIBFN from IBM's CICS TS 6.x documentation |
-| Db2 | Db2 13 for z/OS: decimal arithmetic defaults, SQLCODEs and utility behaviour. SQL runs on SQLite through GixSQL |
-| JCL, DFSORT, IDCAMS | No product level is stated. Behaviour is cited to the z/OS MVS JCL Reference, the DFSORT guide, and DFSMS Access Method Services and Using Data Sets |
+| COBOL | IBM Enterprise COBOL for z/OS 6.4. Harwell compiles with GnuCOBOL 3.2, patched for IBM numeric behavior, with `cobc -std=ibm -fno-arithmetic-osvs -fec=EC-DATA-INCOMPATIBLE` |
+| CICS | IBM CICS Transaction Server for z/OS 6.x: commands, conditions, abend codes and EIBFN values |
+| Db2 | Db2 13 for z/OS: decimal arithmetic, SQLCODEs and utility behavior. SQL runs on SQLite through GixSQL |
+| JCL, DFSORT, IDCAMS | z/OS MVS JCL Reference, DFSORT Application Programming Guide, and DFSMS Access Method Services and Using Data Sets |
 
-Each report says what ran: `toolchain.version`, the compiler versions, whether the runtime is the patched one, and the exact flags.
+Every report records the toolchain that ran: `toolchain.version`, the compiler versions, whether the runtime is patched, and the exact compiler flags.
 
 ## Batch
 
@@ -30,120 +38,120 @@ Each report says what ran: `toolchain.version`, the compiler versions, whether t
 
 | Construct | Status |
 | --- | --- |
-| Fixed-format IBM COBOL, COPY REPLACING, EJECT, SKIP, TITLE, sequence area | Runs |
-| Program checks: S0C7 on invalid packed data, S0CB on decimal divide by zero, S0C9 for small binary operands. The job is flushed and the abnormal DISP fires | Runs |
-| TRUNC(STD), TRUNC(BIN); TRUNC(OPT) from the site setting or a `PROCESS`/`CBL` card | Runs (OPT compiles as STD) |
-| EBCDIC collating for comparisons, `SEARCH ALL`, `EVALUATE THRU`, `SORT`/`MERGE`, INDEXED key order | Runs |
-| `CURRENT-DATE` and every date and time reader | Runs, from the run clock |
-| Subscript checking | Not acted on, as under NOSSRANGE |
-| A compile step's own `PARM` options | Not acted on |
+| Fixed-format IBM COBOL, COPY REPLACING, EJECT, SKIP, TITLE, sequence area | Supported |
+| Program checks: S0C7 on invalid packed data, S0CB on decimal divide by zero, S0C9 for small binary operands. The job is flushed and the abnormal DISP fires | Supported |
+| TRUNC(STD), TRUNC(BIN); TRUNC(OPT) from the site setting or a `PROCESS`/`CBL` card | Supported (OPT compiles as STD) |
+| EBCDIC collating for comparisons, `SEARCH ALL`, `EVALUATE THRU`, `SORT`/`MERGE`, INDEXED key order | Supported |
+| `CURRENT-DATE` and every date and time reader | Supported, from the run clock |
+| Subscript checking | Not processed, as under NOSSRANGE |
+| A compile step's own `PARM` options | Not processed |
 | HLASM modules | Not supported; copybook records only |
-| `CALL 'SYSTEM'`, `C$*`, `CBL_*` | Refused |
-| `EXEC DLI` | Refused at compile: there is no IMS translator |
+| `CALL 'SYSTEM'`, `C$*`, `CBL_*` | Rejected |
+| `EXEC DLI` | Rejected at compile: there is no IMS translator |
 
 ### JCL
 
 | Construct | Status |
 | --- | --- |
-| JOB, EXEC, DD, PROC/PEND, SET, OUTPUT; inline and cataloged PROCs; symbolics; `//step.dd` overrides; `DD *`, `DD DATA` | Runs |
-| COND on EXEC and JOB with EVEN and ONLY; IF/THEN/ELSE/ENDIF on RC, step.RC, ABEND, ABENDCC, RUN | Runs |
-| JCLLIB ORDER, INCLUDE MEMBER= (fifteen levels), RESTART= at a step or procedure step | Runs |
-| DISP, DUMMY, SYSOUT, temporary data sets, GDG define, resolve and roll, referback `*.step.dd` | Runs |
-| IKJEFT01/1A/1B `RUN PROGRAM(x)` from SYSTSIN | Runs |
+| JOB, EXEC, DD, PROC/PEND, SET, OUTPUT; inline and cataloged PROCs; symbolics; `//step.dd` overrides; `DD *`, `DD DATA` | Supported |
+| COND on EXEC and JOB with EVEN and ONLY; IF/THEN/ELSE/ENDIF on RC, step.RC, ABEND, ABENDCC, RUN | Supported |
+| JCLLIB ORDER, INCLUDE MEMBER= (fifteen levels), RESTART= at a step or procedure step | Supported |
+| DISP, DUMMY, SYSOUT, temporary data sets, GDG define, resolve and roll, referback `*.step.dd` | Supported |
+| IKJEFT01/1A/1B `RUN PROGRAM(x)` from SYSTSIN | Supported |
 | A SET re-issued mid-deck | Not supported |
-| Checkpoint restart, `RESTART=(step,checkid)` | Refused |
-| A name with a hyphen, a leading digit or more than eight characters | Refused; no step runs |
+| Checkpoint restart, `RESTART=(step,checkid)` | Rejected |
+| A name with a hyphen, a leading digit or more than eight characters | Rejected; no step runs |
 
 ### Utilities
 
 | Program | Status |
 | --- | --- |
-| SORT, ICEMAN, SYNCSORT, ICETOOL, IDCAMS, IEBGENER, ICEGENER, IEBCOPY, IEBPTPCH, IEFBR14, DSNTIAD, DSNTIAUL, DSNUTILB, ADUUMAIN, INZUTILB (`FORMAT DSNTIAUL`), IGYWCL, IGYWC, COBCOMP | Runs |
-| IGYCRCTL, ASMA90, IEWL, HEWL, DFHECP1$, DSNHPC | Not acted on: rc 0. Harwell compiles, translates and preprocesses members itself |
+| SORT, ICEMAN, SYNCSORT, ICETOOL, IDCAMS, IEBGENER, ICEGENER, IEBCOPY, IEBPTPCH, IEFBR14, DSNTIAD, DSNTIAUL, DSNUTILB, ADUUMAIN, INZUTILB (`FORMAT DSNTIAUL`), IGYWCL, IGYWC, COBCOMP | Supported |
+| IGYCRCTL, ASMA90, IEWL, HEWL, DFHECP1$, DSNHPC | Not processed: rc 0. Harwell compiles, translates and preprocesses members itself |
 | DFHCSDUP | Not run as a step; read by the CSD reader |
-| DFSRRC00 (IMS), NAT3D and NAT3BTCH (Natural), ITPLL, ITPENTER, ITPSTL, EYU9XECS, EYUJXBTP, DFHLS2WS, DFHSIP, DFHXQMN, DFHNCMN, SDSF, FTP | Refused: rc 8, the job goes on by its COND |
-| IEBCOPY COPYMOD and ALTERMOD | Refused |
+| DFSRRC00 (IMS), NAT3D and NAT3BTCH (Natural), ITPLL, ITPENTER, ITPSTL, EYU9XECS, EYUJXBTP, DFHLS2WS, DFHSIP, DFHXQMN, DFHNCMN, SDSF, FTP | Rejected: rc 8, the job goes on by its COND |
+| IEBCOPY COPYMOD and ALTERMOD | Rejected |
 
 ### DFSORT and ICETOOL
 
 | Construct | Status |
 | --- | --- |
-| SORT, MERGE, COPY; INCLUDE/OMIT; INREC, OUTREC, OUTFIL with FIELDS, BUILD, OVERLAY, FINDREP, IFTHEN, PARSE | Runs |
-| Edit masks M0 to M26, EDIT=, SIGNS=, LENGTH=, TO=; SUM | Runs |
-| JOINKEYS, JOIN, REFORMAT; OUTFIL reports with SECTIONS, HEADER3, TRAILER3, COUNT/TOTAL/MIN/MAX/AVG | Runs |
-| SYMNAMES; ALTSEQ; COBOL `E15`/`E35` exits | Runs |
-| ICETOOL COPY, SORT, SELECT, SPLICE, DISPLAY, OCCUR, STATS, RANGE, COUNT, VERIFY, RESIZE | Runs, in card order with MODE |
+| SORT, MERGE, COPY; INCLUDE/OMIT; INREC, OUTREC, OUTFIL with FIELDS, BUILD, OVERLAY, FINDREP, IFTHEN, PARSE | Supported |
+| Edit masks M0 to M26, EDIT=, SIGNS=, LENGTH=, TO=; SUM | Supported |
+| JOINKEYS, JOIN, REFORMAT; OUTFIL reports with SECTIONS, HEADER3, TRAILER3, COUNT/TOTAL/MIN/MAX/AVG | Supported |
+| SYMNAMES; ALTSEQ; COBOL `E15`/`E35` exits | Supported |
+| ICETOOL COPY, SORT, SELECT, SPLICE, DISPLAY, OCCUR, STATS, RANGE, COUNT, VERIFY, RESIZE | Supported, in card order with MODE |
 | ICETOOL message identifiers (ICEnnnI) | Not reproduced |
-| IFTHEN WHEN=GROUP; assembler and other non-COBOL exits | Refused |
-| ICETOOL UNIQUE, DATASORT, SUBSET, MERGE | Refused |
-| Foreign formats (`UTF8`/`16`/`32` keys and others), unnormalised `FL` keys, `Y2` in INCLUDE/OMIT, unstated installation options | Refused, rc 8 or 16 |
+| IFTHEN WHEN=GROUP; assembler and other non-COBOL exits | Rejected |
+| ICETOOL UNIQUE, DATASORT, SUBSET, MERGE | Rejected |
+| Foreign formats (`UTF8`/`16`/`32` keys and others), unnormalised `FL` keys, `Y2` in INCLUDE/OMIT, unstated installation options | Rejected, rc 8 or 16 |
 
 ### IDCAMS
 
 | Command | Status |
 | --- | --- |
-| LASTCC, MAXCC, SET, IF-THEN-ELSE with DO groups; the listing on SYSPRINT | Runs |
-| DEFINE CLUSTER, AIX, PATH, GDG, NONVSAM; DELETE; REPRO; BLDINDEX; LISTCAT; PRINT; ALTER (NEWNAME, LIMIT); VERIFY | Runs |
-| EXPORT, IMPORT | Runs, in Harwell's own format |
-| DIAGNOSE, EXAMINE, DCOLLECT, catalog management | Refused: cc 12 by name |
+| LASTCC, MAXCC, SET, IF-THEN-ELSE with DO groups; the listing on SYSPRINT | Supported |
+| DEFINE CLUSTER, AIX, PATH, GDG, NONVSAM; DELETE; REPRO; BLDINDEX; LISTCAT; PRINT; ALTER (NEWNAME, LIMIT); VERIFY | Supported |
+| EXPORT, IMPORT | Supported, in Harwell's own format |
+| DIAGNOSE, EXAMINE, DCOLLECT, catalog management | Rejected: cc 12 by name |
 
 ## Online
 
-Without a region, `RETURN`, `LINK`, `XCTL` and `ABEND` execute and every other `EXEC CICS` command is answered without running and named. With a region, the commands below run.
+Without a region, Harwell runs `RETURN`, `LINK`, `XCTL` and `ABEND`, and returns normally from every other `EXEC CICS` command without running it. The report names each such command. With a region, Harwell runs the commands in the following table.
 
 ### CICS commands
 
 | Domain | Commands | Status |
 | --- | --- | --- |
-| File control | `READ` (INTO, RIDFLD, KEYLENGTH, UPDATE, GTEQ), `WRITE`, `REWRITE`, `DELETE`, `STARTBR`, `READNEXT`, `READPREV`, `ENDBR`, on real KSDS | Runs |
-| Temporary storage | `WRITEQ TS`, `READQ TS` (ITEM, NEXT, NUMITEMS), `DELETEQ TS` | Runs |
-| BMS | `SEND MAP`, `RECEIVE MAP`, `SEND TEXT`, terminal-control `SEND FROM`, `SEND CONTROL ERASE` | Runs |
-| BMS paging | ACCUM, HEADER, TRAILER, `SEND PAGE`, `SEND CONTROL` other than ERASE | Not acted on |
-| Program control | `LINK`, `XCTL`, `RETURN`, `RETURN TRANSID`, `ABEND`, with COMMAREA or CHANNEL | Runs |
-| Exception handling | `HANDLE CONDITION`, `HANDLE AID`, `HANDLE ABEND`, `IGNORE CONDITION`, `PUSH HANDLE`, `POP HANDLE`; `RESP`, `RESP2`, `NOHANDLE` on every command | Runs |
-| Unit of work | `SYNCPOINT`, `SYNCPOINT ROLLBACK`, commit at task end, backout on abend; `ENQ`, `DEQ` | Runs |
-| Channels | `PUT`, `GET`, `DELETE`, `MOVE CONTAINER`; `STARTBROWSE`, `GETNEXT`, `ENDBROWSE CONTAINER`; `ASSIGN CHANNEL` | Runs |
-| Container conversion | `GET CONTAINER` SET, DATATYPE, CCSID | Not acted on: bytes unconverted |
-| Interval control | `START`, `RETRIEVE`, `CANCEL`, `DELAY`; `ASSIGN STARTCODE` | Runs |
-| Transient data | `WRITEQ TD`, `READQ TD`, `DELETEQ TD`, trigger levels | Runs |
-| Time | `ASKTIME`, `FORMATTIME`, from the run clock | Runs |
-| Named counters | `DEFINE`, `GET`, `QUERY`, `DELETE COUNTER` | Runs |
-| Named counters | `DCOUNTER` | Not acted on |
-| Inquiry | `INQUIRE PROGRAM` (NORMAL or PGMIDERR), `ASSIGN` | Runs |
-| Inquiry | Every other `INQUIRE` and `SET` | Not acted on |
-| Sockets | `CALL 'EZASOKET'` over the listener's connections | Runs |
-| Db2 under CICS | `EXEC SQL COMMIT`, `ROLLBACK` | Refused with SQLCODE -925 / -926, as Db2 does under CICS |
-| Region management | CEDA, SPI commands in a program, BTS, FEPI, WEB | Not acted on |
-| Any other command | | Not acted on |
+| File control | `READ` (INTO, RIDFLD, KEYLENGTH, UPDATE, GTEQ), `WRITE`, `REWRITE`, `DELETE`, `STARTBR`, `READNEXT`, `READPREV`, `ENDBR`, on real KSDS | Supported |
+| Temporary storage | `WRITEQ TS`, `READQ TS` (ITEM, NEXT, NUMITEMS), `DELETEQ TS` | Supported |
+| BMS | `SEND MAP`, `RECEIVE MAP`, `SEND TEXT`, terminal-control `SEND FROM`, `SEND CONTROL ERASE` | Supported |
+| BMS paging | ACCUM, HEADER, TRAILER, `SEND PAGE`, `SEND CONTROL` other than ERASE | Not processed |
+| Program control | `LINK`, `XCTL`, `RETURN`, `RETURN TRANSID`, `ABEND`, with COMMAREA or CHANNEL | Supported |
+| Exception handling | `HANDLE CONDITION`, `HANDLE AID`, `HANDLE ABEND`, `IGNORE CONDITION`, `PUSH HANDLE`, `POP HANDLE`; `RESP`, `RESP2`, `NOHANDLE` on every command | Supported |
+| Unit of work | `SYNCPOINT`, `SYNCPOINT ROLLBACK`, commit at task end, backout on abend; `ENQ`, `DEQ` | Supported |
+| Channels | `PUT`, `GET`, `DELETE`, `MOVE CONTAINER`; `STARTBROWSE`, `GETNEXT`, `ENDBROWSE CONTAINER`; `ASSIGN CHANNEL` | Supported |
+| Container conversion | `GET CONTAINER` SET, DATATYPE, CCSID | Not processed: bytes unconverted |
+| Interval control | `START`, `RETRIEVE`, `CANCEL`, `DELAY`; `ASSIGN STARTCODE` | Supported |
+| Transient data | `WRITEQ TD`, `READQ TD`, `DELETEQ TD`, trigger levels | Supported |
+| Time | `ASKTIME`, `FORMATTIME`, from the run clock | Supported |
+| Named counters | `DEFINE`, `GET`, `QUERY`, `DELETE COUNTER` | Supported |
+| Named counters | `DCOUNTER` | Not processed |
+| Inquiry | `INQUIRE PROGRAM` (NORMAL or PGMIDERR), `ASSIGN` | Supported |
+| Inquiry | Every other `INQUIRE` and `SET` | Not processed |
+| Sockets | `CALL 'EZASOKET'` over the listener's connections | Supported |
+| Db2 under CICS | `EXEC SQL COMMIT`, `ROLLBACK` | Rejected with SQLCODE -925 / -926, as Db2 does under CICS |
+| Region management | CEDA, SPI commands in a program, BTS, FEPI, WEB | Not processed |
+| Any other command | | Not processed |
 
 ### Supplied transactions
 
 | Transaction | Status |
 | --- | --- |
-| CEMT INQUIRE: transactions, programs, files, TS and TD queues, the terminal, tasks, the Db2 connection | Runs |
-| CEMT SET: TRANSACTION ENABLED/DISABLED, PROGRAM NEWCOPY/PHASEIN, FILE OPEN/CLOSED/ENABLED/DISABLED, TSQUEUE ACTION(DELETE) | Runs |
-| CEMT SET on any other attribute; PERFORM; DISCARD; other resource types | Refused |
-| CECI: one command, run on the region's own command implementation | Runs |
-| CEDF: stops before and after each command, at program and task start and end | Runs |
+| CEMT INQUIRE: transactions, programs, files, TS and TD queues, the terminal, tasks, the Db2 connection | Supported |
+| CEMT SET: TRANSACTION ENABLED/DISABLED, PROGRAM NEWCOPY/PHASEIN, FILE OPEN/CLOSED/ENABLED/DISABLED, TSQUEUE ACTION(DELETE) | Supported |
+| CEMT SET on any other attribute; PERFORM; DISCARD; other resource types | Rejected |
+| CECI: one command, run on the region's own command implementation | Supported |
+| CEDF: stops before and after each command, at program and task start and end | Supported |
 
 ### CSD definitions
 
 | Definition | Status |
 | --- | --- |
-| `DEFINE TRANSACTION`, `FILE` (with RECOVERY), `TDQUEUE`, `TSMODEL` | Runs: the region is built from them |
-| DB2CONN, DB2ENTRY, DB2TRAN, ENQMODEL, PIPELINE, TCPIPSERVICE, BUNDLE, LIBRARY, and anything else the region does not carry | Not acted on: read and named on `cics.csd` |
-| A remote transient data queue | Refused |
+| `DEFINE TRANSACTION`, `FILE` (with RECOVERY), `TDQUEUE`, `TSMODEL` | Supported: the region is built from them |
+| DB2CONN, DB2ENTRY, DB2TRAN, ENQMODEL, PIPELINE, TCPIPSERVICE, BUNDLE, LIBRARY, and anything else the region does not carry | Not processed: read and named on `cics.csd` |
+| A remote transient data queue | Rejected |
 
 ### BMS
 
 | Construct | Status |
 | --- | --- |
-| `DFHMSD`/`DFHMDI`/`DFHMDF` macro source: the symbolic map as IBM writes it, and the physical map with position, length, attributes, `INITIAL`, `PICIN`/`PICOUT`, `COLOR`, `HILIGHT`, MUSTENTER, MUSTFILL | Runs |
-| `VALIDN=TRIGGER` | Not acted on: carried, not enforced |
-| An operand the assembler does not model | Not acted on: a warning |
-| A member the assembler cannot read; a field off the map | Refused |
+| `DFHMSD`/`DFHMDI`/`DFHMDF` macro source: the symbolic map as IBM writes it, and the physical map with position, length, attributes, `INITIAL`, `PICIN`/`PICOUT`, `COLOR`, `HILIGHT`, MUSTENTER, MUSTFILL | Supported |
+| `VALIDN=TRIGGER` | Not processed: carried, not enforced |
+| An operand the assembler does not model | Not processed: a warning |
+| A member the assembler cannot read; a field off the map | Rejected |
 
-Each sent screen is painted as text in the report and written as a 3270 data stream to a TN3270 client (x3270, s3270, c3270, Vista, Galasa).
+Harwell paints each screen sent as text in the report, and writes it as a 3270 data stream to a connected TN3270 client.
 
 ## Shared data
 
@@ -151,37 +159,37 @@ Each sent screen is painted as text in the report and written as a 3270 data str
 
 | Construct | Status |
 | --- | --- |
-| Cursors, positioned UPDATE and DELETE, null indicators, DCLGEN | Runs |
-| Rowset and scrolling FETCH for NO SCROLL and INSENSITIVE cursors | Runs |
-| The SQLCA with SQLSTATE; +100 on a searched UPDATE or DELETE that matches nothing; -803, -407, -305, -501, -502 | Runs |
-| DECIMAL exact to 31 digits with Db2's result precision and scale | Runs |
-| EBCDIC ordering with blank padding on character columns | Runs |
-| External COBOL stored procedures: PARAMETER STYLE GENERAL, GENERAL WITH NULLS, DB2SQL | Runs |
-| The batch step as a unit of work; the task as the unit of work under CICS | Runs |
-| Isolation clauses | Not acted on: stripped |
+| Cursors, positioned UPDATE and DELETE, null indicators, DCLGEN | Supported |
+| Rowset and scrolling FETCH for NO SCROLL and INSENSITIVE cursors | Supported |
+| The SQLCA with SQLSTATE; +100 on a searched UPDATE or DELETE that matches nothing; -803, -407, -305, -501, -502 | Supported |
+| DECIMAL exact to 31 digits with Db2's result precision and scale | Supported |
+| EBCDIC ordering with blank padding on character columns | Supported |
+| External COBOL stored procedures: PARAMETER STYLE GENERAL, GENERAL WITH NULLS, DB2SQL | Supported |
+| The batch step as a unit of work; the task as the unit of work under CICS | Supported |
+| Isolation clauses | Not processed: stripped |
 | Db2 column defaults; more than one schema | Not supported; tables are unqualified |
-| LANGUAGE SQL procedures; FETCH SENSITIVE; FETCH WITH CONTINUE | Refused |
+| LANGUAGE SQL procedures; FETCH SENSITIVE; FETCH WITH CONTINUE | Rejected |
 
 ### VSAM and GDG
 
 | Construct | Status |
 | --- | --- |
-| KSDS and RRDS as indexed and relative files; AIX and PATH | Runs |
-| GDG define, resolve and roll | Runs |
-| ESDS and LINEAR | Not acted on: kept as byte images |
+| KSDS and RRDS as indexed and relative files; AIX and PATH | Supported |
+| GDG define, resolve and roll | Supported |
+| ESDS and LINEAR | Not processed: kept as byte images |
 | A KSDS a program creates with OPEN OUTPUT and no declared geometry | Created flat |
 
 ### ADABAS
 
 | Construct | Status |
 | --- | --- |
-| ADASQL FIND DECLARE, READ PHYSICAL, OPEN, FETCH, CLOSE, INSERT, STORE; direct `CALL 'ADABAS'` | Runs |
-| MU fields | Runs at occurrence 1 only |
-| ADASQL UPDATE and DELETE | Refused |
+| ADASQL FIND DECLARE, READ PHYSICAL, OPEN, FETCH, CLOSE, INSERT, STORE; direct `CALL 'ADABAS'` | Supported |
+| MU fields | Supported at occurrence 1 only |
+| ADASQL UPDATE and DELETE | Rejected |
 | Other direct commands | Answer response 22 |
 | Natural | Not supported |
 
-## Next
+## Related information
 
-- [Known limits](/harwell/known-limits)
+- [Known limitations](/harwell/known-limits)
 - [Validation](/harwell/validation)

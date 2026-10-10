@@ -1,49 +1,68 @@
 ---
-title: "Overview"
-description: "Harwell 0.41.0. Harwell runs mainframe batch and online code off the mainframe, and answers every run with one report of exactly what happened."
+title: "What is Harwell?"
+sidebarTitle: "Overview"
+description: "Harwell runs z/OS batch jobs and CICS transactions off the mainframe and returns a structured report of each run."
 ---
 
-Harwell takes the COBOL, JCL, copybooks, BMS maps and Db2 DDL a z/OS shop already has, in the shape it already has them, and runs them. Two kinds of work run:
+Harwell is a runtime for z/OS application code. It runs the COBOL programs, JCL, copybooks, BMS maps and Db2 DDL of an existing mainframe application, with no changes to the source. Harwell runs two kinds of workload:
 
-| | What runs | What you read back |
+| Workload | What runs | What the report contains |
 | --- | --- | --- |
-| Batch | A JCL job: its steps, the programs and utilities they call, the data sets they read and write, Db2 under the step | Each job and step, its return code or abend, what it printed, the data sets and tables it left |
-| Online | A CICS transaction in a region: its programs, BMS screens, files, queues and Db2 inside the task | Each screen the task sent, painted as the terminal shows it, each unit of work, each abend |
+| Batch | JCL jobs: their steps, the programs and utilities those steps call, and the data sets and Db2 tables they read and write | Each job and step, with its return code or abend code, its printed output, and the data sets and tables it left |
+| Online | CICS transactions in a region: their programs, BMS maps, files, queues and Db2 access | Each screen the task sent, as the terminal shows it, with each unit of work and each abend |
 
-Db2, VSAM and GDGs are shared data under both.
+Batch and online workloads share the same Db2 tables, VSAM files and generation data groups.
 
-## What you get
+You use Harwell to run, change and test mainframe application code without running it on the production system.
 
-- One JSON report per run: each job, each step, its return code, what it printed, and every place the run did something the mainframe would not have.
-- A fidelity verdict on every run: `clean`, or `degraded` with each cause named.
-- Refusals by name. A construct Harwell cannot answer is refused with the reason, never skipped.
-- Repeatable runs. The run clock is the whole system clock, so a run repeats byte for byte.
-- Expected end states. State the data sets, tables or screens a run must leave, and the same run carries a verdict.
+**Topics**
 
-## What it is not
+- [Features](#features)
+- [How Harwell runs your code](#how-harwell-runs-your-code)
+- [Versions](#versions)
+- [Related information](#related-information)
 
-Harwell is a toolchain, not a grader. It runs code and reports. Whether a change is correct is decided by whatever reads the report: a test, a CI job, a person.
+## Features
 
-It is not a conformance claim. No conformance suite for this platform exists, from anybody. What Harwell does differently from the mainframe, where known, is listed in [Known limits](/harwell/known-limits); what it was measured on is in [Validation](/harwell/validation).
+**Runs your code unchanged.** Harwell reads the codebase in its existing layout. A `harwell.toml` file at the codebase root declares the libraries, search orders and Db2 catalog. For details, see [Get started](/harwell/evaluate).
 
-## Who it is for
+**One report for each run.** Every run returns one JSON report. The report records each job and step, its return code, its output, the screens each transaction sent, and the starting data. For details, see [Run report](/harwell/report).
 
-Mainframe teams and engineering leaders at banks and insurers running COBOL, CICS and Db2 on z/OS who want to run that code, change it and check the change, away from the production machine.
+**Explicit handling of unsupported constructs.** Harwell does not skip what it cannot run. It rejects such a construct by name and gives the reason. When a run reaches a known difference from z/OS behavior, the report names it with its source location. For details, see [Supported features](/harwell/what-runs) and [Known limitations](/harwell/known-limits).
 
-## How it runs
+**Repeatable runs.** All dates and times that a program reads come from one run clock. The same input on the same Harwell version gives byte-identical output.
 
-COBOL compiles with a patched GnuCOBOL 3.2 in IBM dialect. JCL is interpreted. `EXEC SQL` runs against SQLite through GixSQL, not Db2. VSAM, GDG, DFSORT, IDCAMS and a CICS region are modelled. See [What runs](/harwell/what-runs).
+**Expected results.** You can state the data sets, tables and screens that a run must produce. The report then gives a verdict for each one, and names the first record and byte where a data set differs.
 
-Named for the Harwell Dekatron, the oldest working digital computer.
+**3270 terminal access.** A TN3270 emulator connects to a running CICS region. You can record a terminal session and run it again as a test case.
+
+## How Harwell runs your code
+
+| Component | Implementation |
+| --- | --- |
+| COBOL | GnuCOBOL 3.2 in IBM dialect, with patches for IBM numeric behavior |
+| JCL | Interpreted, including procedures, symbolic parameters, COND and IF/THEN/ELSE |
+| Db2 | `EXEC SQL` runs on SQLite through GixSQL, with Db2 13 for z/OS SQLCODEs and decimal rules |
+| VSAM, GDG | KSDS, RRDS, alternate indexes and generation data groups |
+| Utilities | DFSORT, ICETOOL, IDCAMS, IEBGENER, IEBCOPY and the Db2 utilities |
+| CICS | A region with file control, temporary storage, transient data, BMS, program control and interval control |
+
+For the full list, see [Supported features](/harwell/what-runs).
 
 ## Versions
 
-These pages describe Harwell 0.41.0. See [Fidelity](/harwell/fidelity#versions) for what each version number on a report means.
+This documentation describes Harwell release 0.41.0. Two version identifiers appear in Harwell output:
 
-## Next
+| Identifier | Example | Description |
+| --- | --- | --- |
+| Release | `0.41.0` | The Harwell release. |
+| Toolchain version | `v1.40` | The engine contract. Every report records it in `toolchain.version`. It changes only when the engine contract changes, so several releases can share one toolchain version. |
+
+To identify the exact engine that produced a report, use `toolchain.engine` and `toolchain.stamp`. For details, see [Report reference](/harwell/report-reference#top-level).
+
+## Related information
 
 - [Get started](/harwell/evaluate)
-- [Batch runs](/harwell/batch-runs)
-- [Online runs](/harwell/online-runs)
-- [Fidelity](/harwell/fidelity)
-- [What runs](/harwell/what-runs)
+- [Batch jobs](/harwell/batch-runs)
+- [CICS transactions](/harwell/online-runs)
+- [Supported features](/harwell/what-runs)

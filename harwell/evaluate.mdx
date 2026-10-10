@@ -1,81 +1,113 @@
 ---
-title: "Get started"
-description: "Harwell 0.41.0. Read your codebase, then run one batch stream and one online transaction of your own code on Harwell, and read the reports against what the mainframe does today."
+title: "Get started with Harwell"
+sidebarTitle: "Get started"
+description: "Declare a codebase, compile it, and run one batch job and one CICS transaction from your own application."
 ---
 
-## Access
+This topic shows how to run your own application on Harwell. You declare the codebase, compile it, and then run one batch job and one CICS transaction. You then compare the results with the output that the mainframe produces for the same input.
 
-Ask your Metaphi contact. Harwell is granted per account; you run it from [Hum](/overview), the agent you work with, in plain words ("submit the nightly settlement deck", "start CUST and press enter").
+**Prerequisites**
 
-## Declare the codebase
+- Your account has Harwell access. To request access, contact your Metaphi account team.
+- [Hum](/overview) is installed. You run Harwell from Hum by describing the task, for example "submit the nightly settlement job" or "start transaction CUST and press Enter".
+- For the batch job and the transaction that you choose, you have the mainframe's output for a known input.
 
-Your code runs in place, in the tree it already has. Add a `harwell.toml` at its root saying what the codebase is:
+**Topics**
 
-```toml
-[site]
-search_order = ["progs", "subprogs"]        # where a program is found, earlier wins
-procedure_order = ["procs"]                  # where a submitted deck is found
-db2_catalog = [                              # DDL and seed, built before a run with no saved state
-  "DB2/app_ddl.sql",
-  "DB2/app_seed.sql",
-]
+- [Step 1: Declare the codebase](#step-1-declare-the-codebase)
+- [Step 2: Compile the codebase](#step-2-compile-the-codebase)
+- [Step 3: Run a batch job](#step-3-run-a-batch-job)
+- [Step 4: Run a CICS transaction](#step-4-run-a-cics-transaction)
+- [Step 5: Compare the results with the mainframe](#step-5-compare-the-results-with-the-mainframe)
 
-[site.region.transactions]                   # the program control table
-CUST = "CUSTMNT"
-```
+## Step 1: Declare the codebase
 
-A region can come from the CSD source you ship instead. Every key is optional, and an unknown key is refused by name.
+Harwell runs your code in its existing directory layout. A `harwell.toml` file at the codebase root declares where Harwell finds each kind of member.
 
-## Read your codebase
+**To declare the codebase**
 
-Before running anything, compile what you have. A compile demand names program members; each is compiled and nothing executes. The report has one job per program and one step per source:
+1. Create `harwell.toml` at the root of the codebase.
+2. Declare the search orders, the Db2 catalog and the program control table. For example:
 
-| You read | Means |
-| --- | --- |
-| Job `ok` | The program compiled clean: rc 0 and no line of error severity. A warning-only listing is never a failure |
-| Job `failed` | `stage` names where the first diagnostic came from (`dialect`, `adasql`, `cics`, `gixpp`, `cobc`, `link`), and `first_error` the first error line, with the compiler output beside it |
-| `compile_record` | The exact command line, the compiler's path and version, the diagnostics, the module and its sha256, and a separate source listing |
+   ```toml
+   [site]
+   search_order = ["progs", "subprogs"]        # program libraries, searched in order
+   procedure_order = ["procs"]                  # JCL and cataloged procedures
+   db2_catalog = [                              # DDL and seed rows, applied before a run with no saved state
+     "DB2/app_ddl.sql",
+     "DB2/app_seed.sql",
+   ]
 
-Group the failures by first error to see what blocks your codebase: a missing copybook, a construct the dialect does not handle, `EXEC DLI` with no IMS translator. Compare them with [What runs](/harwell/what-runs).
+   [site.region.transactions]                   # program control table
+   CUST = "CUSTMNT"
+   ```
 
-Then pick one batch stream and one online transaction you know well: ones where you have the mainframe's output for a known input.
+All keys are optional. Harwell rejects an unknown key and names it. Instead of `[site.region]`, you can supply the CSD source of your region. For all keys, see [Batch jobs](/harwell/batch-runs#codebase) and [CICS transactions](/harwell/online-runs#region).
 
-## Run a batch stream
+## Step 2: Compile the codebase
 
-| Step | What |
-| --- | --- |
-| Bring | The decks, the programs and copybooks they reach, the input data sets (one file per DSN, with its LRECL and RECFM), the Db2 DDL and seed rows, and the mainframe's output for that input |
-| Run | Submit the deck by member name. A stream of several jobs runs as a chain, each after the jobs it depends on, under one run clock |
-| Read back | The job log, each step's return code or abend, what each step printed, every spool file, the data sets and tables the run left |
-| Good result | `status: ok`; each step's return code the one the mainframe gives; the data sets and tables match the mainframe's; `fidelity: clean` |
+A compile run compiles program members and runs nothing. Use it to find what prevents your code from running before you run any job.
 
-To compare without reading by hand, state the expected end state: the mainframe's output data sets and tables, byte for byte. The run then carries a verdict per data set, and a miss names the first record and byte that differ. A mask says what a comparison leaves out, such as the job log's CPU and wall times.
+**To compile the codebase**
 
-## Run an online transaction
+1. Request a compile of the program members, or of all members in the program libraries.
+2. In the report, read one job for each program. A job with status `ok` compiled with return code 0 and no error-severity message. Warnings do not cause a failure.
+3. For each job with status `failed`, read `stage` and `first_error`. `stage` identifies the tool that issued the first error: `dialect`, `adasql`, `cics`, `gixpp`, `cobc` or `link`.
+4. Group the failures by first error. Typical causes are a missing copybook, a construct that the dialect does not support, and `EXEC DLI`, which has no IMS translator.
+5. Check each failure against [Supported features](/harwell/what-runs).
 
-| Step | What |
-| --- | --- |
-| Bring | The transaction's programs and copybooks, its BMS source, the region's transactions, seed rows for the tables and files it reads, and every screen a user sends, in order, the entry included |
-| Run | Start the transaction with those screens. Or sit at it: a 3270 emulator (x3270, s3270, c3270, Vista, Galasa) connects over TN3270, and each key you press is one task in a resident region |
-| Read back | Each screen sent, painted 24 by 80 with its fields, attributes and cursor; each unit of work; each abend; the files, queues and tables after |
-| Good result | Every screen shows what the mainframe shows; no task waited on a screen the case did not give; `fidelity: clean` |
+Each compiled step carries a `compile_record`: the exact command line, the compiler version, the messages, the module with its SHA-256 digest, and a source listing.
 
-A session at the terminal records itself as a case: its screens become the next run's input, and the turns you mark right become the expected screens. An expected screen names the map and the fields it must show:
+## Step 3: Run a batch job
 
-```json
-{"exact": true,
- "screens": [{"map": "CUST1A", "fields": {"MSG": "ENTER ACTION AND PRESS ENTER"}}]}
-```
+**To run a batch job**
 
-`exact` also pins the number of maps sent. A field set to `null` must be on the map; its value is not judged.
+1. Make sure that the codebase contains the JCL, the programs and copybooks that the job reaches, the input data sets, and the Db2 DDL and seed rows. Supply each data set as one file per data set name, with its LRECL and RECFM.
+2. Submit the job by member name. To run several jobs as a stream, submit them together. Harwell runs each job after the jobs that it depends on, under one run clock.
+3. In the report, check that `status` is `ok` and that each step's `rc` is the return code that the mainframe gives.
+4. Compare the data sets and tables that the run left with the mainframe's output.
 
-## Read it against the mainframe
+For a description of how Harwell runs a job, see [Batch jobs](/harwell/batch-runs).
 
-- `status` and each step's `rc` say what happened. The exit code never does.
-- `fidelity: degraded` names where the run left the mainframe's behaviour. Look each `kind` up in [Known limits](/harwell/known-limits); the rows no run can declare are listed there too.
-- A refused construct says why. Check it against [What runs](/harwell/what-runs).
+## Step 4: Run a CICS transaction
 
-## Next
+**To run a CICS transaction**
 
-- [The report](/harwell/report)
-- [Known limits](/harwell/known-limits)
+1. Make sure that the codebase contains the transaction's programs and copybooks, its BMS source, and seed rows for the tables and files that it reads.
+2. List every screen that a user sends, in order, starting with the transaction ID entry.
+3. Start the transaction with those screens.
+4. In the report, read `cics.screens_out`. Each entry is one screen, shown 24 by 80 with its fields, attributes and cursor position.
+5. Check that `cics.terminal_waits` contains no entry with `answered: false`. Such an entry means that a task waited for a screen that the input did not supply.
+
+You can also run the transaction from a 3270 emulator. For details, see [CICS transactions](/harwell/online-runs#3270-terminal-access).
+
+## Step 5: Compare the results with the mainframe
+
+Instead of comparing output by hand, state the expected results with the run. The report then carries a verdict in `oracle`.
+
+**To compare a batch run with the mainframe**
+
+1. Supply the mainframe's output data sets and tables as the expected end state.
+2. Optionally, supply a mask for the bytes that the comparison ignores, such as the CPU and elapsed times in the job log.
+3. Run the job. The report gives a verdict for each data set and table. For a data set that differs, it names the first record and byte that differ.
+
+**To compare a transaction with the mainframe**
+
+1. For each screen, state the map and the field values that it must show:
+
+   ```json
+   {"exact": true,
+    "screens": [{"map": "CUST1A", "fields": {"MSG": "ENTER ACTION AND PRESS ENTER"}}]}
+   ```
+
+   `exact` also requires the number of maps sent to match. A field with the value `null` must be on the map, and its value is not compared.
+2. Run the transaction. The report gives a verdict for each screen.
+
+<Note>
+The process exit code does not indicate whether a job succeeded. Read `status` and each step's `rc` in the report. If `fidelity.status` is `degraded`, look up each entry of `fidelity.divergences` by its `kind` in [Known limitations](/harwell/known-limits).
+</Note>
+
+## Related information
+
+- [Run report](/harwell/report)
+- [Known limitations](/harwell/known-limits)

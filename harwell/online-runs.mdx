@@ -1,24 +1,36 @@
 ---
-title: "Online runs"
-description: "Harwell 0.41.0. How a CICS transaction runs: the region, the screens a terminal sends, tasks and units of work, abends, and the terminal a person can sit at."
+title: "CICS transactions"
+description: "How Harwell runs a CICS transaction: the region, screens, tasks, units of work, Db2, abends and 3270 terminal access."
 ---
 
-## The region
+Harwell runs online work as CICS transactions in a region. A transaction starts from the program control table. Its input is the screens that a terminal sends, and its output is the screens that the tasks send, painted on their physical maps.
 
-A region comes from the CSD source the codebase ships, or from a region declared by hand in `harwell.toml`. It carries:
+**Topics**
 
-| Table | Holds |
+- [Region](#region)
+- [How a transaction runs](#how-a-transaction-runs)
+- [Units of work and Db2](#units-of-work-and-db2)
+- [Abends](#abends)
+- [BMS maps](#bms-maps)
+- [3270 terminal access](#3270-terminal-access)
+- [Run a CICS transaction](#run-a-cics-transaction)
+
+## Region
+
+Harwell builds the region from the CSD source in your codebase, or from `[site.region]` in `harwell.toml`. The region contains the following tables:
+
+| Table | Content |
 | --- | --- |
-| Program control (PCT) | Transaction to program. `RETURN TRANSID` resolves through it |
-| File control (FCT) | File name to DSN and cluster geometry, with `recovery`. A CICS file and a batch DD can name the same bytes |
-| Transient data (DCT) | Extrapartition, intrapartition (with trigger levels) and indirect queues |
-| TS models | Which TS queues are recoverable |
+| Program control table (PCT) | The program for each transaction. `RETURN TRANSID` resolves through it |
+| File control table (FCT) | The data set name and cluster attributes for each file, with `recovery`. A CICS file and a batch DD statement can refer to the same data set |
+| Destination control table (DCT) | Extrapartition, intrapartition and indirect transient data queues, with trigger levels |
+| Temporary storage models | The recoverable temporary storage queues |
 
-Every program the codebase ships is in the region. Every region also carries CEMT, CECI and CEDF. A definition the region does not carry is named on the report under `cics.csd`.
+Every program in the codebase is available to the region. Every region also provides the CEMT, CECI and CEDF transactions. The report lists any CSD definition that the region does not use in `cics.csd`.
 
-## A transaction
+## How a transaction runs
 
-A transaction starts from the PCT with no deck. The run is given the screens a terminal sends, one per attention key, in order:
+A transaction starts from the PCT. No JCL is required. The run receives the screens that a terminal sends, one for each attention key, in order.
 
 ```mermaid
 flowchart LR
@@ -30,39 +42,78 @@ flowchart LR
   ret -- no --> done[Conversation ends]
 ```
 
-- **Translation.** Each `EXEC CICS` block becomes a CALL to a resource manager, as IBM's translator turns it into `CALL 'DFHEI1'`. Condition handling, abend exits and EIBFN follow IBM's tables.
-- **Storage.** Every task, LINK and XCTL enters a program on fresh WORKING-STORAGE. Only the COMMAREA or a channel carries state across a turn.
-- **Started tasks** run when the terminal is idle, in due-time order, after the task that started them and before the next screen. The clock never moves, so `DELAY` returns at once.
-- **One task at a time.** There is no task concurrency or locking.
+### Translation
+
+Harwell translates each `EXEC CICS` command into a call, as the IBM translator generates `CALL 'DFHEI1'`. Condition handling, abend exits and EIBFN values follow IBM CICS Transaction Server 6.x.
+
+### Storage
+
+Each task, LINK and XCTL enters a program with initialized WORKING-STORAGE. State passes between tasks only through the COMMAREA or a channel.
+
+### Started tasks
+
+A task started by `START` runs when the terminal is idle, in order of due time, after the task that started it and before the next screen. The run clock does not advance, so `DELAY` returns immediately.
+
+### Task concurrency
+
+The region runs one task at a time.
 
 ## Units of work and Db2
 
-A program with both `EXEC SQL` and `EXEC CICS` is preprocessed, translated and compiled once. Its SQL runs on the same database the batch steps use, and the task owns the unit of work:
+Harwell preprocesses, translates and compiles a program that contains both `EXEC SQL` and `EXEC CICS` in one pass. Its SQL runs against the same database as the batch steps. The task owns the unit of work:
 
-| CICS | Harwell |
+| Event | Result |
 | --- | --- |
-| `SYNCPOINT` | Commit; the next unit of work opens |
-| `SYNCPOINT ROLLBACK` | Roll back the task's SQL, files and TS queues |
-| Task end (`RETURN`) | Commit. One screen turn is one unit of work |
-| Abend | The task's uncommitted SQL and recoverable changes are backed out, and the region goes on |
-| `EXEC SQL COMMIT` / `ROLLBACK` | Refused with SQLCODE -925 / -926, as Db2 does under CICS |
+| `SYNCPOINT` | Commits. A new unit of work starts |
+| `SYNCPOINT ROLLBACK` | Backs out the task's SQL, file and temporary storage changes |
+| Task end (`RETURN`) | Commits. Each screen turn is one unit of work |
+| Abend | Backs out the task's uncommitted SQL and recoverable changes. The region continues |
+| `EXEC SQL COMMIT` or `ROLLBACK` | Rejected with SQLCODE -925 or -926, as Db2 does under CICS |
 
 ## Abends
 
-An abend ends the task and the region goes on: an `EXEC CICS ABEND`, a condition no handler takes (`AEIx`), `APCT`, a program check (`ASRA`), a runaway task (`AICA`). The exits run first. Then the unit of work is backed out, DFHAC2236 goes to the job log and DFHAC2206 to the terminal, and the terminal is free for the next transaction. The report records each one under `cics.abends`.
+An abend ends the task. The region continues. The following conditions cause an abend:
 
-## Screens
+- An `EXEC CICS ABEND` command
+- A condition that no handler takes (`AEIx`)
+- A transaction whose program is not available (`APCT`)
+- A program check (`ASRA`)
+- A runaway task (`AICA`)
 
-Mapsets are assembled from their macro source: the symbolic map as IBM writes it, and the physical map. Each `SEND MAP` is painted on the physical map with BMS's rules: the map supplies position, attribute and initial value, program data replaces it unless it is low-values, and `-1` in a field's length puts the cursor there. The report carries every painted screen.
+Harwell runs the abend exits first. It then backs out the unit of work, writes DFHAC2236 to the job log and sends DFHAC2206 to the terminal. The report records each abend in `cics.abends`.
 
-## The terminal
+## BMS maps
 
-A person can sit at the transaction: a 3270 emulator (x3270, s3270, c3270, Vista, Galasa) connects over TN3270, the region stays resident, and each key is one task in it. A task that abends ends that task and the region goes on.
+Harwell assembles each mapset from its `DFHMSD`, `DFHMDI` and `DFHMDF` macro source into a symbolic map and a physical map. Each `SEND MAP` is painted with BMS rules:
 
-A session at the terminal is a case. Its screens become the next run's input, and the turns marked right become the expected screens. Replayed, they give the same maps and the same data.
+- The physical map supplies the position, attribute and initial value of each field.
+- Program data replaces the initial value unless it is low-values.
+- A length of `-1` places the cursor in the field.
 
-## Next
+The report includes every painted screen in `cics.screens_out`.
 
-- [Fidelity](/harwell/fidelity)
-- [The report](/harwell/report)
-- [What runs](/harwell/what-runs)
+## 3270 terminal access
+
+A 3270 emulator connects to the region over TN3270. Supported emulators include x3270, s3270, c3270, Vista and Galasa. The region stays resident, and each attention key runs one task. An abend ends that task, and the region continues.
+
+You can record a terminal session as a test case. The screens that you send become the input of the next run, and the turns that you mark as correct become the expected screens. A replay produces the same maps and the same data.
+
+## Run a CICS transaction
+
+**To run a CICS transaction**
+
+1. Declare the region in `harwell.toml`, or include the CSD source in the codebase.
+2. List every screen that the user sends, in order, starting with the transaction ID entry.
+3. Start the transaction with those screens.
+4. In the report, read each screen in `cics.screens_out`, and each abend in `cics.abends`.
+5. Check that `cics.terminal_waits` contains no entry with `answered: false`, and that `cics.screens_unread` is absent.
+
+<Note>
+`cics.terminal_waits` with `answered: false` means that a task waited for a screen that the input did not supply. `cics.screens_unread` means that the input supplied a screen after the conversation ended.
+</Note>
+
+## Related information
+
+- [Batch jobs](/harwell/batch-runs)
+- [Run report](/harwell/report)
+- [Supported features](/harwell/what-runs#online)
