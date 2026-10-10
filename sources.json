@@ -1,0 +1,11 @@
+{
+  "sources": [
+    {
+      "name": "harwell",
+      "tab": "Harwell",
+      "repo": "harwell-project/harwell",
+      "ref": "main",
+      "path": "docs"
+    }
+  ]
+}

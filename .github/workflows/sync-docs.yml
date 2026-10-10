@@ -1,0 +1,119 @@
+name: sync-docs
+
+# docs.metaphi.ai is the one docs surface; each product's docs live in its own
+# repository beside its code, and sources.json names them. This job fetches
+# every source at its ref, renders them with scripts/sync_docs.py into <name>/
+# and their tabs in docs.json, checks every link and anchor, and commits to
+# main only when something changed. Mintlify deploys main on push.
+#
+# The reads go through one GitHub App (Contents: read-only), installed on each
+# source's org: its id is the DOCS_SYNC_APP_ID variable, its key the
+# DOCS_SYNC_APP_KEY secret, and each source gets a token scoped to its own
+# repository. The write is this run's own GITHUB_TOKEN. Every source must
+# fetch, or nothing is committed: a source that did not fetch would otherwise
+# render as deleted.
+on:
+  schedule:
+    - cron: "17 * * * *"
+  repository_dispatch:
+    types: [docs-sync]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-docs
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      sources: ${{ steps.read.outputs.sources }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          sparse-checkout: sources.json
+          sparse-checkout-cone-mode: false
+      - id: read
+        run: |
+          echo "sources=$(jq -c '[.sources[] | . + {owner: (.repo | split("/")[0]), repo_name: (.repo | split("/")[1])}]' sources.json)" >> "$GITHUB_OUTPUT"
+
+  fetch:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        source: ${{ fromJSON(needs.plan.outputs.sources) }}
+    steps:
+      - id: app
+        uses: actions/create-github-app-token@v3.2.0
+        with:
+          app-id: ${{ vars.DOCS_SYNC_APP_ID }}
+          private-key: ${{ secrets.DOCS_SYNC_APP_KEY }}
+          owner: ${{ matrix.source.owner }}
+          repositories: ${{ matrix.source.repo_name }}
+          permission-contents: read
+      - uses: actions/checkout@v7.0.1
+        with:
+          repository: ${{ matrix.source.repo }}
+          ref: ${{ matrix.source.ref }}
+          token: ${{ steps.app.outputs.token }}
+          path: src
+          sparse-checkout: ${{ matrix.source.path }}
+          persist-credentials: false
+      - env:
+          NAME: ${{ matrix.source.name }}
+          SRC_PATH: ${{ matrix.source.path }}
+        run: |
+          set -eu
+          mkdir -p "out/$NAME"
+          cp -R "src/$SRC_PATH/." "out/$NAME/"
+          git -C src rev-parse HEAD > "out/$NAME.sha"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-${{ matrix.source.name }}
+          path: out
+          if-no-files-found: error
+          retention-days: 1
+
+  render:
+    needs: fetch
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: source-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/sources
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+      - run: python -I scripts/sync_docs.py "$RUNNER_TEMP/sources"
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "22"
+      - run: npm install -g mint@4.2.984
+      - run: mint validate
+      - run: |
+          set -eu
+          for name in $(jq -r '.sources[].name' sources.json); do
+            mint broken-links --check-anchors --files "$name/**/*.md"
+          done
+      - run: |
+          set -eu
+          git add -A docs.json $(jq -r '.sources[].name' sources.json)
+          if git diff --cached --quiet; then
+            echo "nothing changed"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "sync docs: $(cd "$RUNNER_TEMP/sources" && for f in *.sha; do printf '%s@%.12s ' "${f%.sha}" "$(cat "$f")"; done)"
+          git push origin HEAD:main

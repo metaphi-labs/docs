@@ -7,4 +7,4 @@ npm i -g mint
 mint dev
 ```
 
-`harwell/` and the Harwell tab of `docs.json` are rendered from [harwell-project/harwell](https://github.com/harwell-project/harwell) `docs/` by `.github/workflows/sync-harwell.yml` (`scripts/sync_harwell.py`). Edit Harwell's pages there, never here.
+Product docs live in each product's repository beside its code. `sources.json` names them; `.github/workflows/sync-docs.yml` renders each into `<name>/` and its tab in `docs.json` (`scripts/sync_docs.py`). Edit those pages at their source, never here.
