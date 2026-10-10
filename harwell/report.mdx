@@ -7,40 +7,41 @@ The report is the whole answer. A run that Harwell executed is never an error, h
 
 ## A batch run
 
-The smallest unit is three files:
-
-```
-hello-run-unit/
-  Progs/HELLO.cbl        DISPLAY 'HELLO FROM THE SANDBOX'
-  Procs/HELLOJOB.jcl     //STEP01 EXEC PGM=HELLO
-  run.json               {"submit": ["HELLOJOB"]}
-```
-
-Its report, trimmed:
+A one-step job that reads Db2 and writes a data set, trimmed. Names are changed; structure and values are from a real report.
 
 ```json
 {
-  "report": 1, "mode": "decks", "status": "ok",
+  "report": 1, "mode": "chain", "status": "ok",
   "jobs": [{
-    "name": "HELLOJOB", "status": "ok", "worst_rc": 0,
-    "steps": [{"name": "STEP01", "pgm": "HELLO", "kind": "cobol",
-               "status": "ran", "rc": 0,
-               "stdout": "HELLO FROM THE SANDBOX\n"}]
+    "name": "CRDRENW", "job_id": "JOB00001", "status": "ok", "worst_rc": 0,
+    "log": "JOB CRDRENW  [ok]\n  STEP01         CRDRENW    db2       ran           RC=0    ran (DB2); 1 out DD(s)  [cpu=0.030s wall=0.053s peak-rss=147700K]",
+    "steps": [{
+      "name": "STEP01", "pgm": "CRDRENW", "kind": "db2", "status": "ran", "rc": 0,
+      "note": "ran (DB2); 1 out DD(s)",
+      "stdout": "CARD RENEWAL - 20260915\n...\nCOMPLETE - EXPIRED 0003 REPLACED 0002 SKIPPED 0001\n",
+      "stdout_bytes": 420,
+      "dd_dsn": {"CARDOUT": "APP.CARD.MAILING"},
+      "dd_lrecl": {"CARDOUT": 90}, "dd_recfm": {"CARDOUT": "FB"},
+      "output_bytes": {"CARDOUT": 180}, "output_records": {"CARDOUT": 2},
+      "libraries": [{"callee": "CRDGEN", "library": "Progs", "member": "/tmp/unitzip_3jx1xnpj/Progs/CRDGEN.cbl"}],
+      "load_module": {"name": "CRDRENW", "library": "Progs", "member": "/tmp/unitzip_3jx1xnpj/Progs/CRDRENW.cbl"},
+      "stubbed": [], "neutralized_verbs": {},
+      "cpu_s": 0.03, "wall_s": 0.053, "max_rss_kb": 147700
+    }],
+    "spool": [{"job": "CRDRENW", "job_id": "JOB00001", "step": "STEP01", "dd": "SYSOUT", "records": 9, "bytes": 420}]
   }],
-  "fidelity": {"status": "clean", "neutralized": [], "divergences": []},
-  "metrics": {"cpu_s": 0.013, "wall_s": 0.981, "max_rss_kb": 2480}
+  "start_state": {"source": "unit"},
+  "fidelity": {"status": "clean", "neutralized": [], "neutralized_verbs": [], "divergences": [], "deck_warnings": []},
+  "toolchain": {"version": "v1.40", "cobc": "3.2.0", "gixpp": "1.0.20b", "dialect": "ibm-fixed",
+                "engine": "600da4ee529b", "flags": ["-fixed", "-std=ibm", "-fno-arithmetic-osvs", "-fec=EC-DATA-INCOMPATIBLE"],
+                "stamp": "385ba68c3ff240af"},
+  "metrics": {"cpu_s": 0.03, "wall_s": 0.053, "max_rss_kb": 147700, "cpu_by_owner": {"program": 0.03}}
 }
 ```
 
-Each job also carries its job log, one line per step. A sort step and a COBOL step:
+`toolchain.version` is the engine contract, not the Harwell release; see [Versions](/harwell/fidelity#versions).
 
-```
-JOB PAYJOB  [ok]
-  SORT    SORT    utility  ran  RC=0  SORT 3 recs on 1 key(s) [lrecl=15]
-  TOTAL   TOTAL   cobol    ran  RC=0  ran; 1 out DD(s)
-```
-
-A program that does not compile reads `failed`, with the first error and the compiler listing:
+A program that does not compile reads `failed`, with the stage and the first error:
 
 ```
 "stage": "cobc", "first_error": "'WS-TOTAL' is not defined"
@@ -76,6 +77,43 @@ A miss reads `"passed": false`, with a code such as `bytes_differ` and a sentenc
 
 ## An online run
 
+A transaction driven through 13 screens, with an expected screen per turn, trimmed to one painted screen and two of its fields. Names are changed; structure and values are from a real report.
+
+```json
+{
+  "mode": "decks", "status": "ok",
+  "jobs": [{"name": "CRDMJOB", "status": "ok",
+            "steps": [{"name": "STEP01", "pgm": "CRDMNT", "kind": "db2", "status": "ran", "rc": 0,
+                       "note": "ran (CICS+DB2); 0 out DD(s)"}]}],
+  "cics": {
+    "transactions": {"CRDM": "CRDMNT"},
+    "screens_in": 13,
+    "returns": [{"transid": "CRDM", "commarea": ""}],
+    "screens_out": [{
+      "map": "CRDM1A", "mapset": "CRDM01", "size": [24, 80],
+      "text": [
+        " CARD MAINTENANCE (CRDM)                                                        ",
+        " ACTION (C/R/U/D) .:                     C                                      ",
+        " CARD NUMBER (PAN) :                     4111110000000013                       ",
+        "...",
+        " MESSAGE ..........:                     CARD CREATED                           "
+      ],
+      "fields": [
+        {"name": "ACTION", "row": 3, "col": 42, "length": 1, "value": "C", "source": "program",
+         "attrb": ["NORM", "UNPROT", "IC"], "attr_ebcdic": "80", "color": null, "hilight": null},
+        {"name": "MSG", "row": 21, "col": 42, "length": 39, "value": "CARD CREATED", "source": "program",
+         "attrb": ["NORM", "PROT"], "attr_ebcdic": "20", "color": null, "hilight": null}
+      ],
+      "cursor": [3, 42]
+    }]
+  },
+  "oracle": {"passed": true,
+             "screens": {"0": {"verdict": "match", "map": "CRDM1A"}, "1": {"verdict": "match", "map": "CRDM1A"}}},
+  "fidelity": {"status": "clean"},
+  "toolchain": {"version": "v1.40"}
+}
+```
+
 A run with a CICS region adds `cics`:
 
 | Key | What it holds |
@@ -92,15 +130,10 @@ A run with a CICS region adds `cics`:
 
 ## Fidelity
 
-| `fidelity.status` | Means |
-| --- | --- |
-| `clean` | Nothing was stubbed, and the run reached no construct where Harwell is known to differ from the mainframe |
-| `degraded` | The run reached a stub, a neutralised CICS command or a known divergence. Nothing failed, but what it computed there is not what the site would have |
-
-Each entry in `fidelity.divergences` names its `kind`, job, step, program, data set, member and line, and says what the run reached.
+`fidelity` says where the run left the mainframe's behaviour. See [Fidelity](/harwell/fidelity) and [Known limits](/harwell/known-limits).
 
 ## Next
 
 - [Report reference](/harwell/report-reference)
 - [Known limits](/harwell/known-limits)
-- [Evaluate Harwell](/harwell/evaluate)
+- [Get started](/harwell/evaluate)

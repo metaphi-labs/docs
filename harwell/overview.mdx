@@ -1,6 +1,6 @@
 ---
 title: "Overview"
-description: "Harwell runs mainframe batch and online code off the mainframe, and answers every run with one report of exactly what happened."
+description: "Harwell 0.41.0. Harwell runs mainframe batch and online code off the mainframe, and answers every run with one report of exactly what happened."
 ---
 
 Harwell takes the COBOL, JCL, copybooks, BMS maps and Db2 DDL a z/OS shop already has, in the shape it already has them, and runs them. Two kinds of work run:
@@ -24,7 +24,7 @@ Db2, VSAM and GDGs are shared data under both.
 
 Harwell is a toolchain, not a grader. It runs code and reports. Whether a change is correct is decided by whatever reads the report: a test, a CI job, a person.
 
-It is not a conformance claim. No conformance suite for this platform exists, from anybody. What Harwell does differently from the mainframe, where known, is listed in [Known limits](/harwell/known-limits).
+It is not a conformance claim. No conformance suite for this platform exists, from anybody. What Harwell does differently from the mainframe, where known, is listed in [Known limits](/harwell/known-limits); what it was measured on is in [Validation](/harwell/validation).
 
 ## Who it is for
 
@@ -36,14 +36,14 @@ COBOL compiles with a patched GnuCOBOL 3.2 in IBM dialect. JCL is interpreted. `
 
 Named for the Harwell Dekatron, the oldest working digital computer.
 
-## Releases
+## Versions
 
-These pages describe Harwell 0.41.0. The public-codebase numbers on [Evidence](/harwell/evidence) were taken on 0.31.0. Pages whose content depends on the version state it in their description, and every report names the version that produced it in `toolchain.version`.
+These pages describe Harwell 0.41.0. See [Fidelity](/harwell/fidelity#versions) for what each version number on a report means.
 
 ## Next
 
+- [Get started](/harwell/evaluate)
+- [Batch runs](/harwell/batch-runs)
+- [Online runs](/harwell/online-runs)
+- [Fidelity](/harwell/fidelity)
 - [What runs](/harwell/what-runs)
-- [Evidence](/harwell/evidence)
-- [Known limits](/harwell/known-limits)
-- [Evaluate Harwell](/harwell/evaluate)
-- [The report](/harwell/report)

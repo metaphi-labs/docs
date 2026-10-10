@@ -122,25 +122,38 @@
         "tab": "Harwell",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Overview",
             "pages": [
-              "harwell/overview",
-              "harwell/what-runs",
-              "harwell/evidence"
+              "harwell/overview"
             ]
           },
           {
-            "group": "Use Harwell",
+            "group": "Get started",
             "pages": [
-              "harwell/evaluate",
-              "harwell/report",
-              "harwell/known-limits"
+              "harwell/evaluate"
+            ]
+          },
+          {
+            "group": "Concepts",
+            "pages": [
+              "harwell/batch-runs",
+              "harwell/online-runs",
+              "harwell/fidelity"
             ]
           },
           {
             "group": "Reference",
             "pages": [
-              "harwell/report-reference"
+              "harwell/what-runs",
+              "harwell/report",
+              "harwell/report-reference",
+              "harwell/known-limits"
+            ]
+          },
+          {
+            "group": "Validation",
+            "pages": [
+              "harwell/validation"
             ]
           }
         ]

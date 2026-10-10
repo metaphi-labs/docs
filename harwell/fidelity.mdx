@@ -1,0 +1,56 @@
+---
+title: "Fidelity"
+description: "Harwell 0.41.0. How a run says where it did something the mainframe would not have, and how a report says what produced it."
+---
+
+An emulator that skips work and returns success is worse than one that fails. So every gap is visible on the report.
+
+## Three ways a gap shows
+
+| Gap | What Harwell does | On the report |
+| --- | --- | --- |
+| A construct Harwell cannot answer | Refuses it by name, with the reason | The step's status, return code and note |
+| A CALL with no source, or a CICS command outside what runs | Neutralises it: a no-op stub, or the command answered without running | `fidelity.neutralized`, `fidelity.neutralized_verbs` |
+| A path where Harwell is known to differ from the mainframe | Runs it, and declares the divergence when the run reaches it | `fidelity.divergences`, one entry per occurrence with its `kind`, job, step, program, data set, member and line |
+
+A neutralised construct or a declared divergence makes the run `degraded`. Nothing failed, but what it computed there is not what the site would have. `clean` means none happened.
+
+A divergence is declared where the construct was exercised, not where it is merely present. Some known differences cannot be detected from inside a run at all; [Known limits](/harwell/known-limits) lists them separately.
+
+## Status and fidelity are separate
+
+| Field | Says |
+| --- | --- |
+| `status` | Whether every job ended `ok`. A run can read `failed` and `clean` together |
+| `fidelity.status` | Whether the run stayed on paths where Harwell does what the mainframe does |
+| The exit code | Only whether Harwell ran the unit or refused it outright. Never whether a job succeeded |
+
+## Identity
+
+A run against stale engine code answers as confidently as a current one. So the report's `toolchain` measures what ran rather than asserting it:
+
+| Key | Is |
+| --- | --- |
+| `toolchain.cobc`, `toolchain.gixpp` | The compiler and SQL preprocessor versions, probed |
+| `toolchain.libcob` | What the runtime does, measured by a probe: `patched` or `stock`. Stock and patched print the same version |
+| `toolchain.engine` | A hash of the engine sources that ran |
+| `toolchain.flags` | The exact compiler flags |
+| `toolchain.stamp` | One digest over all of it |
+
+Two reports are comparable on time when `configuration.values` and `toolchain.stamp` are both equal.
+
+## Versions
+
+Two version numbers appear in these pages, and they are different things:
+
+| Number | What it is | Where |
+| --- | --- | --- |
+| Release, e.g. `0.41.0` | The Harwell package release. These pages describe 0.41.0; the [Validation](/harwell/validation) numbers were taken on 0.31.0 | Each page's description |
+| `toolchain.version`, e.g. `v1.40` | The engine contract every run report stamps. It is set by hand and was `v1.40` at both 0.31.0 and 0.41.0 | Every report |
+
+The release is not on the report. To know exactly which engine produced a report, read `toolchain.engine` and `toolchain.stamp`.
+
+## Next
+
+- [Known limits](/harwell/known-limits)
+- [The report](/harwell/report)

@@ -1,67 +1,18 @@
 ---
-title: "Evidence"
-description: "Public-codebase numbers on Harwell 0.31.0. A full credit card payment system run on Harwell, batch and online, and two public mainframe applications read and compiled at pinned commits. What each number measures, and what is not measured."
+title: "Validation"
+description: "Two public mainframe applications, read and compiled by Harwell 0.31.0 at pinned commits: what each number measures, what was refused and why, and what is not measured."
 ---
-
-## A credit card payment system
-
-A complete credit card payment platform in COBOL, CICS and Db2, built by a Metaphi mainframe specialist and run on Harwell. Online, it authorizes Mastercard and Visa transactions and manages customers, cards, policies, fraud rules, points, chargebacks and billing on CICS screens. In batch, an end-of-day schedule reconciles authorizations, reconciles network clearing, awards points, bills, applies payments, posts chargebacks and renews cards.
-
-Counted from the repository at commit `feede9c` of its main branch:
-
-| Part | Count |
-| --- | --- |
-| COBOL main programs | 19: 8 batch, 11 online |
-| COBOL subroutines | 31 |
-| Copybooks | 34 |
-| COBOL lines, programs and subroutines | 15,711 |
-| Members with `EXEC SQL` | 42 |
-| Db2 DDL members / tables | 8 / 18, plus one seed member |
-| JCL decks | 8 |
-| BMS mapsets | 9 |
-| CICS transactions | 10 |
-
-The end-of-day schedule chains all eight decks. Each runs after the jobs whose output it reads; card renewal depends on none:
-
-```mermaid
-flowchart LR
-  BAUT001[BAUT001 authorization recon] --> BFIN001[BFIN001 Mastercard clearing]
-  BAUT001 --> BFIN002[BFIN002 Visa clearing]
-  BFIN001 --> BCHG002[BCHG002 chargeback posting]
-  BFIN002 --> BCHG002
-  BFIN001 --> BPTS001[BPTS001 points award]
-  BFIN002 --> BPTS001
-  BCHG002 --> BFIN003[BFIN003 billing]
-  BFIN003 --> BFIN004[BFIN004 payments]
-  BCUS001[BCUS001 card renewal]
-```
-
-Its `harwell.toml` declares the codebase to Harwell: the program search order (main programs, then subroutines), the deck library, the Db2 catalog (eight DDL members and a seed, built before a run that starts from no saved state), and the region's ten transactions.
-
-### How it is verified
-
-| Suite | Kind | What it checks |
-| --- | --- | --- |
-| Authorization, financial, chargeback, customer, points | Batch, 5 suites | Each deck's reports and output data sets against 16 recorded goldens |
-| End to end | Batch, 3 chained legs | One business day: the day's 32 authorization requests, then authorization reconciliation after midnight, then the financial end-of-day chain, each leg on the state the last one left; 9 goldens |
-| Authorization, billing, cards, chargeback, customer, fraud, policy | Online, 7 suites | A scripted screen sequence per transaction, 5 to 18 attentions; 3 suites carry a recorded screen oracle |
-
-A screen oracle states the maps a transaction must send and the fields each must show. A golden is the expected bytes of a report or data set.
-
-### Results
-
-{/* RESULTS: pending current run on Harwell */}
 
 ## Public reference codebases
 
-Two public applications, pinned to a commit, read by Harwell's own readers with no compiler and no run. Anyone can fetch the same bytes and get the same numbers; CI re-derives them on every push.
+Two public applications, pinned to a commit. Harwell's readers count what they read and name what they did not understand; the compile row compiles every program member; transactions started runs them. Anyone can fetch the same bytes and get the same numbers, and CI re-derives all but the last on every push.
 
 | | Repository | Commit | Character |
 | --- | --- | --- | --- |
 | AWS CardDemo | `aws-samples/aws-mainframe-modernization-carddemo` | `59cc6c2` | Batch-heavy: 61 decks, 62 IDCAMS streams, DFSORT and IEBGENER steps, 21 BMS mapsets, 25 online members, embedded SQL, an IMS variant |
 | GenApp | `cicsdev/cics-genapp` | `f6f3f4b` | Online: 500 `EXEC CICS` blocks |
 
-At those commits, on harwell 0.31.0:
+At those commits, on Harwell 0.31.0:
 
 | Measure | CardDemo | GenApp |
 | --- | --- | --- |
@@ -116,4 +67,4 @@ Transactions started is the one number CI does not re-derive. It was measured by
 ## Next
 
 - [Known limits](/harwell/known-limits)
-- [Evaluate Harwell](/harwell/evaluate)
+- [Get started](/harwell/evaluate)

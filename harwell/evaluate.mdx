@@ -1,11 +1,11 @@
 ---
-title: "Evaluate Harwell"
-description: "Run one batch stream and one online transaction of your own code on Harwell, and read the reports against what the mainframe does today."
+title: "Get started"
+description: "Harwell 0.41.0. Read your codebase, then run one batch stream and one online transaction of your own code on Harwell, and read the reports against what the mainframe does today."
 ---
 
 ## Access
 
-Ask your Metaphi contact. Harwell is granted per account; you run it from [Hum](/overview), the agent you work with, in plain words ("submit the nightly settlement deck", "start CUMG and press enter").
+Ask your Metaphi contact. Harwell is granted per account; you run it from [Hum](/overview), the agent you work with, in plain words ("submit the nightly settlement deck", "start CUST and press enter").
 
 ## Declare the codebase
 
@@ -13,15 +13,15 @@ Your code runs in place, in the tree it already has. Add a `harwell.toml` at its
 
 ```toml
 [site]
-search_order = ["progs", "subroutines"]     # where a program is found, earlier wins
+search_order = ["progs", "subprogs"]        # where a program is found, earlier wins
 procedure_order = ["procs"]                  # where a submitted deck is found
 db2_catalog = [                              # DDL and seed, built before a run with no saved state
-  "DB2/customer_ddl.sql",
-  "DB2/system_seed.sql",
+  "DB2/app_ddl.sql",
+  "DB2/app_seed.sql",
 ]
 
 [site.region.transactions]                   # the program control table
-CUMG = "OCUS001"
+CUST = "CUSTMNT"
 ```
 
 A region can come from the CSD source you ship instead. Every key is optional, and an unknown key is refused by name.
@@ -64,7 +64,7 @@ A session at the terminal records itself as a case: its screens become the next 
 
 ```json
 {"exact": true,
- "screens": [{"map": "MCUS1A", "fields": {"MSG": "CCMG: ACTION C/R/U/D + FIELDS, PRESS EN"}}]}
+ "screens": [{"map": "CUST1A", "fields": {"MSG": "ENTER ACTION AND PRESS ENTER"}}]}
 ```
 
 `exact` also pins the number of maps sent. A field set to `null` must be on the map; its value is not judged.
