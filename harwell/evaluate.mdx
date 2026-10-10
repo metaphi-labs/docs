@@ -1,0 +1,69 @@
+---
+title: "Evaluate Harwell"
+description: "Run one batch stream and one online transaction of your own code on Harwell, and read the reports against what the mainframe does today."
+---
+
+## Access
+
+Ask your Metaphi contact. Harwell is granted per account; you run it from [Hum](/overview), the agent you work with, in plain words ("submit the nightly settlement deck", "start CUMG and press enter").
+
+## Declare the codebase
+
+Your code runs in place, in the tree it already has. Add a `harwell.toml` at its root saying what the codebase is:
+
+```toml
+[site]
+search_order = ["progs", "subroutines"]     # where a program is found, earlier wins
+procedure_order = ["procs"]                  # where a submitted deck is found
+db2_catalog = [                              # DDL and seed, built before a run with no saved state
+  "DB2/customer_ddl.sql",
+  "DB2/system_seed.sql",
+]
+
+[site.region.transactions]                   # the program control table
+CUMG = "OCUS001"
+```
+
+A region can come from the CSD source you ship instead. Every key is optional, and an unknown key is refused by name.
+
+Pick one batch stream and one online transaction you know well: ones where you have the mainframe's output for a known input.
+
+## Run a batch stream
+
+| Step | What |
+| --- | --- |
+| Bring | The decks, the programs and copybooks they reach, the input data sets (one file per DSN, with its LRECL and RECFM), the Db2 DDL and seed rows, and the mainframe's output for that input |
+| Run | Submit the deck by member name. A stream of several jobs runs as a chain, each after the jobs it depends on, under one run clock |
+| Read back | The job log, each step's return code or abend, what each step printed, every spool file, the data sets and tables the run left |
+| Good result | `status: ok`; each step's return code the one the mainframe gives; the data sets and tables match the mainframe's; `fidelity: clean` |
+
+To compare without reading by hand, state the expected end state: the mainframe's output data sets and tables, byte for byte. The run then carries a verdict per data set, and a miss names the first record and byte that differ. A mask says what a comparison leaves out, such as the job log's CPU and wall times.
+
+## Run an online transaction
+
+| Step | What |
+| --- | --- |
+| Bring | The transaction's programs and copybooks, its BMS source, the region's transactions, seed rows for the tables and files it reads, and every screen a user sends, in order, the entry included |
+| Run | Start the transaction with those screens. Or sit at it: a 3270 emulator (x3270, s3270, c3270, Vista, Galasa) connects over TN3270, and each key you press is one task in a resident region |
+| Read back | Each screen sent, painted 24 by 80 with its fields, attributes and cursor; each unit of work; each abend; the files, queues and tables after |
+| Good result | Every screen shows what the mainframe shows; no task waited on a screen the case did not give; `fidelity: clean` |
+
+A session at the terminal records itself as a case: its screens become the next run's input, and the turns you mark right become the expected screens. An expected screen names the map and the fields it must show:
+
+```json
+{"exact": true,
+ "screens": [{"map": "MCUS1A", "fields": {"MSG": "CCMG: ACTION C/R/U/D + FIELDS, PRESS EN"}}]}
+```
+
+`exact` also pins the number of maps sent. A field set to `null` must be on the map; its value is not judged.
+
+## Read it against the mainframe
+
+- `status` and each step's `rc` say what happened. The exit code never does.
+- `fidelity: degraded` names where the run left the mainframe's behaviour. Look each `kind` up in [Known limits](/harwell/known-limits); the rows no run can declare are listed there too.
+- A refused construct says why. Check it against [What runs](/harwell/what-runs).
+
+## Next
+
+- [The report](/harwell/report)
+- [Known limits](/harwell/known-limits)

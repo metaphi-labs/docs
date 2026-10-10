@@ -1,0 +1,103 @@
+---
+title: "The report"
+description: "Every run answers with one JSON report: each job, each step, its return code, what it printed, the screens a transaction sent, and every place the run differed from the mainframe."
+---
+
+The report is the whole answer. A run that Harwell executed is never an error, however its jobs ended: whether a job succeeded is in the report, never in an exit code. A run Harwell refuses outright says why.
+
+## A batch run
+
+The smallest unit is three files:
+
+```
+hello-run-unit/
+  Progs/HELLO.cbl        DISPLAY 'HELLO FROM THE SANDBOX'
+  Procs/HELLOJOB.jcl     //STEP01 EXEC PGM=HELLO
+  run.json               {"submit": ["HELLOJOB"]}
+```
+
+Its report, trimmed:
+
+```json
+{
+  "report": 1, "mode": "decks", "status": "ok",
+  "jobs": [{
+    "name": "HELLOJOB", "status": "ok", "worst_rc": 0,
+    "steps": [{"name": "STEP01", "pgm": "HELLO", "kind": "cobol",
+               "status": "ran", "rc": 0,
+               "stdout": "HELLO FROM THE SANDBOX\n"}]
+  }],
+  "fidelity": {"status": "clean", "neutralized": [], "divergences": []},
+  "metrics": {"cpu_s": 0.013, "wall_s": 0.981, "max_rss_kb": 2480}
+}
+```
+
+Each job also carries its job log, one line per step. A sort step and a COBOL step:
+
+```
+JOB PAYJOB  [ok]
+  SORT    SORT    utility  ran  RC=0  SORT 3 recs on 1 key(s) [lrecl=15]
+  TOTAL   TOTAL   cobol    ran  RC=0  ran; 1 out DD(s)
+```
+
+A program that does not compile reads `failed`, with the first error and the compiler listing:
+
+```
+"stage": "cobc", "first_error": "'WS-TOTAL' is not defined"
+```
+
+| Key | What it holds |
+| --- | --- |
+| `status` | `ok` when every job ended `ok` or `skipped`; `failed` otherwise |
+| `jobs[]` | One per job, in run order: `name`, `status` (`ok`, `failed`, or `blocked` when a job it depends on failed), `steps`, the job log, every spool file |
+| `jobs[].steps[]` | One per step reached: `name`, `pgm`, `kind`, `status`, `rc`, `stdout`, `stderr`, bytes and records per DD, the data set behind each DD |
+| `jobs[].steps[].termination` | The abend a step ended on: a program check (`S0C7`, `S0CB`, `S0C9`) or an unhandled I/O condition |
+| `oracle` | Present when the run states an expected end state: `passed`, and a verdict per data set, table and screen |
+| `fidelity` | `clean` or `degraded`, with each divergence, stub and neutralised CICS command named. See [Known limits](/harwell/known-limits) |
+| `toolchain` | What the run executed on: compiler versions, whether the runtime is the patched one, the exact flags, one digest over all of it |
+| `configuration` | Every setting that can change an output byte, with where it came from |
+| `start_state` | Where the starting data came from: a snapshot, a kept volume, the site's declared tables and data sets, or empty |
+| `metrics` | CPU, wall time and peak memory for the run; the same per step and per job |
+| `timeline` | Each phase of the call as a timed span: compiles, links, each step |
+
+## An expected end state
+
+With the expected output data set stated, the same run carries a verdict:
+
+```json
+"oracle": {"passed": true,
+           "datasets": {"PAY.TOTAL": {"verdict": "match", "code": "equal",
+                                      "expected_bytes": 20, "actual_bytes": 20}}}
+```
+
+A miss reads `"passed": false`, with a code such as `bytes_differ` and a sentence for a person: `PAY.TOTAL: a and b first differ at record 0, byte 12 of the record`.
+
+## An online run
+
+A run with a CICS region adds `cics`:
+
+| Key | What it holds |
+| --- | --- |
+| `cics.screens_out` | Every send painted on its physical map, in order: map, mapset, the text as the terminal shows it, each field with its row, column, length, value and attributes, and the cursor |
+| `cics.maps_sent` | Every SEND MAP, in order, with the symbolic map's bytes |
+| `cics.text_sent` | Every SEND TEXT |
+| `cics.uow` | Every unit-of-work boundary: commit or rollback, at a syncpoint, task end or abend, with the files, queues and SQL it covered |
+| `cics.abends` | Each task that abended: transaction, abend code, program, whether its changes were backed out |
+| `cics.terminal_waits`, `cics.screens_unread` | Where the screens the run was given and the tasks did not meet |
+| `cics.files`, `cics.ts_queues`, `cics.td_queues` | The region's files and queues at the end |
+| `cics.transactions` | The program control table |
+| `cics.bms` | The mapsets assembled, any refused with the reason, assembler warnings, and each `SEND MAP`/`RECEIVE MAP` whose program layout does not match the map |
+
+## Fidelity
+
+| `fidelity.status` | Means |
+| --- | --- |
+| `clean` | Nothing was stubbed, and the run reached no construct where Harwell is known to differ from the mainframe |
+| `degraded` | The run reached a stub, a neutralised CICS command or a known divergence. Nothing failed, but what it computed there is not what the site would have |
+
+Each entry in `fidelity.divergences` names its `kind`, job, step, program, data set, member and line, and says what the run reached.
+
+## Next
+
+- [Known limits](/harwell/known-limits)
+- [Evaluate Harwell](/harwell/evaluate)

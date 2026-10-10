@@ -1,0 +1,92 @@
+---
+title: "Known limits"
+description: "Where Harwell differs from the mainframe, what to do about it, and how a run tells you it reached one."
+---
+
+Harwell's source lists 72 known places where it does not do what the mainframe does, each with a workaround. A fixed one leaves the list. This page groups them by area; each row names its `kind`, the stable name a report uses.
+
+## How a run tells you
+
+| On the report | Means |
+| --- | --- |
+| `fidelity.status: clean` | Nothing below happened |
+| `fidelity.status: degraded` | The run reached a stub, a neutralised CICS command or a declared divergence. Nothing failed, but what it computed there is not what the site would have |
+| `fidelity.divergences[]` | Each divergence the run reached, with its `kind`, job, step, program, data set, member and line |
+| `fidelity.neutralized` | Each CALLed module replaced by a no-op stub: a gap in the codebase to close |
+| `fidelity.neutralized_verbs` | Each CICS command the region answered without running |
+| A refused step | A construct Harwell cannot answer, refused with the reason |
+
+Eleven kinds are declared on a run when it reaches them, marked **declared** below. The rest cannot be detected from inside a run (an uninitialised byte, a scheduler's choice, a grader's reading of the output), so no run names them. Check your code against those rows yourself.
+
+## COBOL and data
+
+| Where | Workaround | Kind |
+| --- | --- | --- |
+| WORKING-STORAGE bytes no statement assigns: undefined on the mainframe, the compiler's default byte here | Leave never-assigned bytes out of a comparison | `unassigned-working-storage` |
+| `TRUNC(OPT)` with a binary receiver given a value wider than its PICTURE; DISPLAY of a binary item | Keep binary receivers inside their PICTURE; compare binary fields by value, not DISPLAY text | `trunc-opt` |
+| Invalid data in zoned or packed fields: letters in a zoned digit, MOVE or compare of bad packed data, sign handling of some packed MOVEs | Seed numeric fields with valid digits; declare text fields `PIC X` | `zoned-invalid-digit`, `move-invalid-data`, `compare-invalid-digits`, `packed-move-sign` |
+| Character comparison over signed zoned data or packed bytes the compiler cannot place | Compare numeric fields as numbers | `zoned-sign-collation`, `group-compare-layout-unknown` |
+| Binary divide by zero: abend code S0C9 or S0CB may differ | Check that the step abended, not which code | `binary-divide-exception` |
+| A file declared only inside a CALLed subprogram (**declared**) | Add the SELECT to the main program | `callee-declared-file` |
+| A fixed FD whose record length the LRECL contradicts: the step is refused before the program runs (**declared**) | Make LRECL agree, or code `RECORD CONTAINS 0` | `fixed-attribute-conflict` |
+| An asterisk in columns 1 to 6, read as a comment (**declared**) | Check the member is card-formatted | `sequence-area-asterisk` |
+| Language Environment services Harwell does not provide | Call a provided service, or ship the behaviour as a program | `le-services` |
+
+## Batch
+
+| Where | Workaround | Kind |
+| --- | --- | --- |
+| Two jobs running at once: run one after the other here (**declared** where they share a data set exclusively) | Order dependent jobs explicitly | `concurrent-jobs` |
+| A rerun after an abend part-way through | Check the commit boundary from outside | `abend-rerun` |
+| Checkpoint restart, `RESTART=(step,checkid)` | Restart at a step boundary | `checkpoint-restart` |
+| `RESTART=` naming a step that calls a procedure | Restart at `call.procstep` | `restart-proc` |
+| JOB COND after a step that abended | Code the test on the step's own EXEC COND | `job-cond-abend` |
+| Lower-case letters in a JCL name field | Upper case | `jcl-name-case` |
+| Program fetch, and a program that branches on its own data set name | Declare load libraries and system libraries in `harwell.toml` | `program-fetch`, `dataset-name-service` |
+| Partitioned data set directories | Name members explicitly; compare member contents | `partitioned-data-set` |
+| Volume inside the batch window | Make no capacity claims from a run | `batch-window-volume` |
+| DFSORT edge cases: EBCDIC-only output detail, some formats and constants, non-COBOL exits, installation options, missing control cards | One workaround per row in the source; most are "state it explicitly" | `sort-*`, `missing-control-card` |
+
+## Db2 on SQLite
+
+| Where | Workaround | Kind |
+| --- | --- | --- |
+| Ordering a character expression that is not a column | Order on the column itself | `sql-character-expression-collation` |
+| DECIMAL or DIGITS over an operand of unstated type; integer overflow | Declare host variables of listed types; wrap in `DECIMAL(...)` | `sql-decimal-untyped-operand`, `digits-untyped-expression`, `sql-integer-overflow` |
+| Stored procedures | Keep them external COBOL | `stored-procedure` |
+| Sensitive scrolling and partial rowset access | Declare scrollable cursors INSENSITIVE | `sensitive-scroll-and-row-of-rowset` |
+| DDL in Db2's own storage spelling; USA or EUR dates into a table a job creates | Seed such tables up front; write dates as YYYY-MM-DD | `db2-storage-ddl`, `runtime-table-date-form` |
+| DSNUTILB LOAD with no field specifications; unload option words | State field positions; remove the options | `load-default-layout`, `unload-options` |
+
+## VSAM and IDCAMS
+
+| Where | Workaround | Kind |
+| --- | --- | --- |
+| KSDS key order on a toolchain without the collation patch (**declared**) | Run on the published toolchain | `indexed-key-order` |
+| OPEN OUTPUT of a KSDS with no DEFINE CLUSTER | Define the cluster with IDCAMS first | `ksds-open-output` |
+| LISTCAT statistics beyond REC-TOTAL; EXPORT's portable format | Compare REC-TOTAL and geometry only; keep EXPORT and IMPORT in one run | `listcat-statistics`, `export-portable-format` |
+
+## Online (CICS)
+
+| Where | Workaround | Kind |
+| --- | --- | --- |
+| One task at a time: START runs after the starting task ends (**declared**); ENQ is always granted (**declared**) | Check a started task's effect on the next screen; check that the right resource was enqueued | `cics-start`, `cics-enq` |
+| A program check ends the task ASRA and backs out (**declared**); a task killed by a signal is not backed out (**declared**) | Test coded abend paths; treat a killed task's files as written | `cics-system-abend`, `cics-task-signal` |
+| Screens the case gives and the tasks did not meet (**declared**) | Give every attention the user makes, in order | `cics-terminal-input` |
+| CICS Sockets listener (**declared**) | Script each client's whole conversation | `cics-sockets` |
+| Recoverable resources not backed out; unit of work size; region storage after an abend | Declare recovery on the FILE; syncpoint inside long loops | `cics-recoverable-resources`, `cics-uow-size`, `cics-abend-region-storage` |
+| Abend in a CALLed subprogram; subprogram state across LINKs | Put HANDLE ABEND where it can abend; carry state in the COMMAREA | `cics-call-abend`, `cics-link-subprogram-state` |
+| BMS: ship the `.bms` source; INITIAL longer than LENGTH; VALIDN=TRIGGER | Correct the source; name the attention in the case | `bms-map`, `bms-initial-length`, `bms-validn-trigger` |
+| Remote TD queues, DCOUNTER, INQUIRE, CEMT/CECI/CEDF details, SEND TEXT paging, container conversion, EIBFN for four SPI commands | One workaround per row in the source | `cics-*` |
+
+## Comparing output
+
+| Where | Workaround | Kind |
+| --- | --- | --- |
+| Two encodings of the same figure | Compare whole records byte for byte when the encoding matters | `decoded-field-compare` |
+| REDEFINES branches and items under a group OCCURS | Compare the record byte-strict | `layout-redefines-occurs` |
+
+## Next
+
+- [The report](/harwell/report)
+- [Evaluate Harwell](/harwell/evaluate)

@@ -1,0 +1,92 @@
+---
+title: "What runs"
+description: "What Harwell executes and what it does not, for batch, for online, and for the data both share. A construct outside it is refused by name, named on the report, or listed in Known limits. None is skipped silently."
+---
+
+## Batch
+
+### COBOL
+
+Fixed-format IBM COBOL, compiled with GnuCOBOL 3.2 in IBM dialect (`cobc -std=ibm`).
+
+| Runs | Detail |
+| --- | --- |
+| Program checks | Invalid packed digits or sign end the step S0C7; a divide by zero with no ON SIZE ERROR ends it S0CB (S0C9 for small binary operands). The job is flushed and the abnormal DISP fires. Subscripts are not checked, as under NOSSRANGE |
+| TRUNC | STD, BIN and OPT, from the site setting or the member's own `PROCESS`/`CBL` card |
+| Collating | The site's EBCDIC sequence for comparisons, `SEARCH ALL`, `EVALUATE THRU`, `SORT`/`MERGE` and INDEXED key order |
+| Numeric data | IBM sign semantics for alphanumeric-to-numeric and packed MOVEs, blank zoned operands read as zero, packed sign codes A to F |
+| Source | EJECT, SKIP, TITLE, the sequence area, Area A, FD record lengths, COPY REPLACING |
+| Dates | `CURRENT-DATE` and every other date and time reader from the run clock |
+
+Not supported: HLASM modules. `CALL 'SYSTEM'`, `C$*` and `CBL_*` are refused.
+
+### JCL
+
+| Runs | Detail |
+| --- | --- |
+| Statements | JOB, EXEC, DD, PROC/PEND, SET, OUTPUT; inline and cataloged PROCs, symbolics, `//step.dd` overrides; instream `DD *` and `DD DATA` |
+| Flow | COND on EXEC and JOB, with EVEN and ONLY; IF/THEN/ELSE/ENDIF on RC, step.RC, ABEND, ABENDCC and RUN |
+| Libraries | JCLLIB ORDER, INCLUDE MEMBER= (fifteen levels), RESTART= at a step or procedure step |
+| Data sets | DISP, DUMMY, SYSOUT, temporary data sets, GDG define, resolve and roll; referback `*.step.dd` for DCB |
+| TSO batch | IKJEFT01/1A/1B `RUN PROGRAM(x)` from SYSTSIN |
+
+Not supported: checkpoint restart (`RESTART=(step,checkid)`) is refused; a SET re-issued mid-deck.
+
+### DFSORT and ICETOOL
+
+Runs: SORT, MERGE and COPY with INCLUDE/OMIT; INREC, OUTREC and OUTFIL with FIELDS, BUILD, OVERLAY, FINDREP, IFTHEN and PARSE; edit masks M0 to M26; SUM; JOINKEYS, JOIN and REFORMAT; OUTFIL reports with SECTIONS, HEADER3, TRAILER3 and COUNT/TOTAL/MIN/MAX/AVG; SYMNAMES; ALTSEQ; COBOL `E15`/`E35` exits. ICETOOL COPY, SORT, SELECT, SPLICE, DISPLAY, OCCUR, STATS, RANGE, COUNT, VERIFY and RESIZE.
+
+Refused by name: IFTHEN WHEN=GROUP, assembler exits, ICETOOL UNIQUE, DATASORT, SUBSET and MERGE. ICETOOL message identifiers (ICEnnnI) are not reproduced.
+
+### IDCAMS
+
+Runs as a command language: LASTCC, MAXCC, SET, IF-THEN-ELSE with DO groups, the listing on SYSPRINT; DEFINE CLUSTER, AIX, PATH, GDG and NONVSAM; DELETE; REPRO; BLDINDEX; LISTCAT; PRINT; ALTER (NEWNAME, LIMIT); VERIFY; EXPORT and IMPORT.
+
+Not supported: DIAGNOSE, EXAMINE, DCOLLECT and catalog management answer cc 12 by name. EXPORT writes Harwell's own format.
+
+## Online
+
+### CICS
+
+Runs: file control, temporary storage, program control, exception handling, the unit of work with recoverable files and queues, channels and containers, interval control, transient data, named counters, and Db2 inside a task.
+
+Every region carries CEMT (INQUIRE and SET over transactions, programs, files, queues, the terminal, tasks and the Db2 connection, NEWCOPY and PHASEIN), CECI and CEDF.
+
+Not supported: CEDA and the rest of region management, SPI commands in a program, BTS, FEPI, WEB. One task runs at a time, so there is no task concurrency or locking. Every other command is neutralised and named on the report.
+
+### BMS and the terminal
+
+Mapsets are assembled from their macro source: the symbolic map as IBM writes it, and a physical map. Each screen a task sends is painted as text in the report, and written as a 3270 data stream to a TN3270 client (x3270, s3270, c3270, Vista or Galasa).
+
+## Shared data
+
+### Db2
+
+`EXEC SQL` runs through GixSQL against SQLite. It is not Db2.
+
+| Runs | Detail |
+| --- | --- |
+| Cursors | Positioned UPDATE and DELETE, null indicators, rowset and scrolling FETCH for NO SCROLL and INSENSITIVE cursors, DCLGEN |
+| SQLCA | The full SQLCA with SQLSTATE; SQLCODE +100 on a searched UPDATE or DELETE that matches nothing; -803, -407, -305, -501, -502 |
+| DECIMAL | Exact to 31 digits, with Db2's result precision and scale |
+| Ordering | EBCDIC ordering with blank padding on character columns |
+| Procedures | External COBOL stored procedures in PARAMETER STYLE GENERAL, GENERAL WITH NULLS and DB2SQL |
+| Unit of work | In batch, COMMIT and ROLLBACK end it, normal end commits, an abend backs out. Under CICS the task owns it |
+| Utilities | DSNTIAD, DSNTIAUL, DSNUTILB and the unload utilities |
+
+Not supported: LANGUAGE SQL procedures and FETCH SENSITIVE are refused. One schema; tables are unqualified. Isolation clauses are stripped. Db2 column defaults.
+
+### VSAM and GDG
+
+KSDS and RRDS run as real indexed and relative files, with AIX and PATH. GDGs are defined, resolved and rolled from JCL and IDCAMS.
+
+Not supported: ESDS and LINEAR stay byte images. A KSDS a program creates with OPEN OUTPUT is flat unless its geometry is declared.
+
+### ADABAS
+
+ADASQL FIND, OPEN, FETCH, CLOSE, INSERT and STORE, rewritten to SQL; direct `CALL 'ADABAS'` against a native runtime. ADASQL UPDATE and DELETE are refused. No Natural.
+
+## Next
+
+- [Known limits](/harwell/known-limits)
+- [Evidence](/harwell/evidence)
