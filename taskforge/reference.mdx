@@ -35,6 +35,7 @@ A tool above your tier is not listed. Beyond the tier, GitHub decides at the cal
 | --- | --- | --- | --- |
 | `run_task_ci_checks` | Pre-run checks | Run task CI on Harbor bundles: the screen, the advisory audits, and the validate run that decides eval_ready. | `l1` |
 | `prerun_validate` | Validate before a run | Validate one submitted bundle's construction before any run and return a task whose result says passed, what is missing and what warns, check by check. | `l1` |
+| `run_redteam` | Red-team a task's tests | Run mutants of the reference against a bundle's tests as wrong solutions, label and judge the survivors, and return the confirmed findings: patch, scenario, ticket sentence, verdict. | `l2` |
 
 ## Conduct
 

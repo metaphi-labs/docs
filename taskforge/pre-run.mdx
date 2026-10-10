@@ -114,3 +114,40 @@ Mode `full` adds one `conduct` rollout with the first model. It lands at `<task>
 ## Construction only: `prerun_validate`
 
 Task CI's screen and audits on one bundle (structure, verifier setup, instruction and test quality), with no sandbox and no rollout. Returns passed, what is missing and what warns. A fast first look.
+
+## Red team: `run_redteam`
+
+Does the grader reject a near miss of the reference? Task CI shows that the reference passes; this checks what the tests would let through. It is advice and never decides eval_ready.
+
+```json
+run_redteam {"repo": "acme/tasks", "ref": "main", "paths": ["tasks/fix-rounding", "tasks/seat-limits"]}
+```
+
+Each bundle runs in its own container, all under one task. Poll it with `get_task`.
+
+For each bundle:
+
+1. The reference and the untouched code run in their sandboxes. The reference must score 1.0 and the untouched code below it; if not, the bundle is skipped and the reason is named.
+2. A model lists the ticket's requirements and writes wrong but plausible variants of the reference for each one.
+3. Each variant that applies and builds runs against the tests as a wrong solution, in the task's own environment. A variant that does not build is never counted as caught.
+4. Each variant that still scores 1.0 has survived. A model labels each survivor against the ticket, and a second, different model judges every survivor labelled wrong.
+
+A finding is a survivor the judge confirmed. It carries:
+
+- the patch
+- the scenario that shows it wrong
+- the ticket sentence it breaks
+- how the scenario is reached
+- the verdict and its confidence
+
+The summary counts the variants written, the mutants built, the survivors, the variants labelled wrong and the findings confirmed. A variant whose run returned no reward is counted as unknown, never as survived or caught.
+
+| Argument | Default | |
+| --- | --- | --- |
+| `path` or `paths` | | The bundle directories, each holding `task.toml` |
+| `legs` | `["mutants"]` | `blind` is reserved for the next leg |
+| `model` | `google/gemini-3.8-flash` | Writes and labels the variants |
+| `judge_model` | `openai/gpt-6-sol` | Judges the survivors; must differ from `model` |
+| `variants_per_requirement` | 4 | 1 to 8 |
+
+No anthropic model is accepted for either role. The bundle must declare its working directory as an artifact in `task.toml`, for example `artifacts = [{ source = "/app" }]`. The run lands at `<task>/redteam/<run id>/`, with `report.json` there.
