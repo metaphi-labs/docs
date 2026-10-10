@@ -1,0 +1,80 @@
+name: sync-harwell
+
+# Harwell's pages here are rendered from harwell-project/harwell docs/ on main,
+# the one source; harwell/ and the Harwell tab of docs.json are this job's
+# output and are never edited by hand (scripts/sync_harwell.py says what a page
+# becomes). A run reads docs/ at main's head, renders it, checks every link and
+# anchor the pages carry, and commits to main only when something changed;
+# Mintlify deploys main on push.
+#
+# Harwell is private, so the read goes through the GitHub App whose id is the
+# HARWELL_DOCS_APP_ID variable and whose key is the HARWELL_DOCS_APP_KEY
+# secret, installed on harwell-project/harwell with Contents: read. The write
+# is this run's own GITHUB_TOKEN. Harwell's tree is swept for the words it does
+# not publish before it reaches main (its ci.yml), which is what makes main's
+# docs/ publishable here.
+on:
+  schedule:
+    - cron: "17 * * * *"
+  repository_dispatch:
+    types: [harwell-docs]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-harwell
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - id: app
+        uses: actions/create-github-app-token@v3.2.0
+        with:
+          app-id: ${{ vars.HARWELL_DOCS_APP_ID }}
+          private-key: ${{ secrets.HARWELL_DOCS_APP_KEY }}
+          owner: harwell-project
+          repositories: harwell
+          permission-contents: read
+      - uses: actions/checkout@v7.0.1
+        with:
+          repository: harwell-project/harwell
+          ref: main
+          token: ${{ steps.app.outputs.token }}
+          path: .harwell
+          sparse-checkout: docs
+          persist-credentials: false
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+      - id: render
+        run: |
+          set -eu
+          sha="$(git -C .harwell rev-parse HEAD)"
+          python -I scripts/sync_harwell.py .harwell "$sha"
+          rm -rf .harwell
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "22"
+      - run: npm install -g mint@4.2.984
+      - run: mint validate
+      - run: mint broken-links --check-anchors --files "harwell/**/*.md"
+      - env:
+          SHA: ${{ steps.render.outputs.sha }}
+        run: |
+          set -eu
+          git add -A harwell docs.json
+          if git diff --cached --quiet; then
+            echo "harwell docs at $SHA: nothing changed"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "harwell docs at ${SHA:0:12}"
+          git push origin HEAD:main
