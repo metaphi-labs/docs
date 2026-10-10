@@ -108,7 +108,8 @@ jobs:
           done
       - run: |
           set -eu
-          git add -A docs.json $(jq -r '.sources[].name' sources.json)
+          mapfile -t names < <(jq -r '.sources[].name' sources.json)
+          git add -A docs.json "${names[@]}"
           if git diff --cached --quiet; then
             echo "nothing changed"
             exit 0
