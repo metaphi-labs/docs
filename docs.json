@@ -136,6 +136,12 @@
               "harwell/report",
               "harwell/known-limits"
             ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "harwell/report-reference"
+            ]
           }
         ]
       }

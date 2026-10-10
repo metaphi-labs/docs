@@ -26,7 +26,19 @@ CUMG = "OCUS001"
 
 A region can come from the CSD source you ship instead. Every key is optional, and an unknown key is refused by name.
 
-Pick one batch stream and one online transaction you know well: ones where you have the mainframe's output for a known input.
+## Read your codebase
+
+Before running anything, compile what you have. A compile demand names program members; each is compiled and nothing executes. The report has one job per program and one step per source:
+
+| You read | Means |
+| --- | --- |
+| Job `ok` | The program compiled clean: rc 0 and no line of error severity. A warning-only listing is never a failure |
+| Job `failed` | `stage` names where the first diagnostic came from (`dialect`, `adasql`, `cics`, `gixpp`, `cobc`, `link`), and `first_error` the first error line, with the compiler output beside it |
+| `compile_record` | The exact command line, the compiler's path and version, the diagnostics, the module and its sha256, and a separate source listing |
+
+Group the failures by first error to see what blocks your codebase: a missing copybook, a construct the dialect does not handle, `EXEC DLI` with no IMS translator. Compare them with [What runs](/harwell/what-runs).
+
+Then pick one batch stream and one online transaction you know well: ones where you have the mainframe's output for a known input.
 
 ## Run a batch stream
 

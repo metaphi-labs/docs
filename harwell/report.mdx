@@ -1,6 +1,6 @@
 ---
 title: "The report"
-description: "Every run answers with one JSON report: each job, each step, its return code, what it printed, the screens a transaction sent, and every place the run differed from the mainframe."
+description: "Harwell 0.41.0, report format 1. Every run answers with one JSON report: each job, each step, its return code, what it printed, the screens a transaction sent, and every place the run differed from the mainframe."
 ---
 
 The report is the whole answer. A run that Harwell executed is never an error, however its jobs ended: whether a job succeeded is in the report, never in an exit code. A run Harwell refuses outright says why.
@@ -60,6 +60,8 @@ A program that does not compile reads `failed`, with the first error and the com
 | `metrics` | CPU, wall time and peak memory for the run; the same per step and per job |
 | `timeline` | Each phase of the call as a timed span: compiles, links, each step |
 
+Every key, with its type and whether a reader may rely on it: [Report reference](/harwell/report-reference).
+
 ## An expected end state
 
 With the expected output data set stated, the same run carries a verdict:
@@ -99,5 +101,6 @@ Each entry in `fidelity.divergences` names its `kind`, job, step, program, data 
 
 ## Next
 
+- [Report reference](/harwell/report-reference)
 - [Known limits](/harwell/known-limits)
 - [Evaluate Harwell](/harwell/evaluate)

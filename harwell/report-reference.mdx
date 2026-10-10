@@ -1,0 +1,196 @@
+---
+title: "Report reference"
+description: "Every key of the run report, as of Harwell 0.41.0, report format 1. Generated from the report's JSON schema."
+---
+
+The report's format number is `report: 1`. It moves only when a required key is renamed, removed or changes meaning, never for an added key. Additional keys are allowed at every level. "Required" keys are the ones a reader may rely on; the rest may be absent. `[]` marks an array's items.
+
+## Top level
+
+| Key | Type | Required | Meaning |
+|---|---|---|---|
+| `report` | `1` | yes | The format number. It moves when a required key is renamed, removed or changes meaning, and never for an added key. Pin the number you read. |
+| `unit` | string |  | The unit directory, on a run of a hand-built unit. |
+| `codebase` | string |  | The codebase root (the directory of `harwell.toml`), on a job submitted in place. |
+| `work` | string \| null | yes | The work volume the run executed against. With no `--work`, a temporary volume that lived as long as the run. |
+| `mode` | string \| null | yes | Which demand ran: `decks`, `chain`, `compile` or `online` (a region's screens and no deck). |
+| `status` | `ok` \| `failed` | yes | `ok` when every job ended `ok` or `skipped`; `failed` otherwise, including a run that ran no job. |
+| `seeded_datasets` | array | yes | Every DSN the unit's `CATALOG/` seeded. |
+| `seed_notes` | array | yes | One note per seeded image that did not frame at its declared LRECL: either the delimiters were stripped (the image was exactly N lines of LRECL bytes) or the bytes were seeded unchanged with the record arithmetic shown. Always present; empty when every image framed. |
+| `metrics` | object | yes | `{cpu_s, wall_s, max_rss_kb, cpu_by_owner}` over the whole run, with the step meanings. |
+| `toolchain` | object | yes | What the run executed on, built by `toolchain.identity()` alone. `version`, `cobc`, `gixpp`, `dialect`: probed, never asserted. `libcob`: what the runtime does, measured by a probe (stock and patched GnuCOBOL print the same version), with `state` `patched` or `stock`. `engine`: a hash of the `harwell.engine` sources that ran; compare it with `harwell.engine.toolchain.engine_fingerprint()`. `flags`: the exact `cobc` flags. `arch`: machine and system. `stamp`: one digest over all of it, the same string the compile cache is keyed on. Two reports are comparable on time when `configuration.values` and `toolchain.stamp` are both equal. |
+| `oracle` | object |  | Present only when the unit declares `ORACLE/`, its expected end state; absent otherwise, and on every compile. `{passed, datasets, tables, jobs, absent, screens?}`. Each item carries `verdict` (`match`, `differs`, `missing`), `code` (a compare code, unit-format.md) and `why` for a person when it is not a match. |
+| `capture` | object \| null | yes | Null unless `run.json` asked for `capture`. Then `{datasets: {DSN: base64 \| null}, tables: {TABLE: dump}}`, the shape `ORACLE/` declares, so a golden run's capture can be written into `ORACLE/` as it is. |
+| `logs` |  |  | The full SQL trace of every SQL step whose inline `sql_trace` was tailed, or of every SQL step when `run.json` sets `sql_trace`: `{JOB: {STEP: {sql_trace_b64, bytes, bytes_dropped}}}`. `bytes_dropped` is non-zero only when the 16 MB per-step cap applied. Absent when nothing needed it. |
+| `provenance` |  |  | On a compile report from `compileunit.audit_corpus`: the corpus commit the verdict came from. |
+
+## `start_state`
+
+| Key | Type | Required | Meaning |
+|---|---|---|---|
+| `start_state` | object |  | Where the volume's starting state came from: on a job submitted or a transaction started in place, and on a hand-built unit. |
+| `start_state.source` | `snapshot` \| `volume` \| `site` \| `empty` \| `unit` | yes | Where the state the run started on came from, the first that applies: `snapshot` the `--from` snapshot, `volume` a `--work` volume that already held state, `site` the state `harwell.toml` declares (`[site] db2_catalog`, `[site.catalog]`), `empty` none of them. On a hand-built unit it is always `unit`: the unit's own `DB/seed.sql` and `CATALOG/`, laid on a fresh volume or, when `path` is given, on the volume carried in. |
+| `start_state.path` | string |  | The snapshot or the volume, for `snapshot` and `volume`; for `unit`, the volume carried in that the unit's material was laid over. |
+| `start_state.digest` | string |  | For `snapshot`, its manifest digest. For `unit`, a sha256 over its seed's and data sets' digests. For `site`, a sha256 over every declared member's digest, every data set's digest and geometry, and the code page: the key the built state is kept under in the compile store, beside the toolchain stamp. |
+| `start_state.file` | string |  | For `site`, the `harwell.toml` that declared it. |
+| `start_state.db2_catalog` | array |  | For `site`, each declared Db2 member in the order it ran: `{path, sha256}`. For `unit`, its `DB/seed.sql`. |
+| `start_state.catalog` | array |  | For `site`, each declared data set: `{dsn, path, sha256}` and its declared geometry. For `unit`, each file under its `CATALOG/`: `{dsn, path, sha256}`. |
+| `start_state.code_page` | string |  | For `site`, the code page the tables collate by. |
+| `start_state.cached` | boolean |  | For `site`, whether the built state was restored from the compile store rather than built by this run. |
+| `start_state.applied` | boolean |  | `false` when a declared member was refused; the report's `error` and `diagnostics` then name the member, the line and the statement, and no job ran. |
+
+## `configuration`
+
+| Key | Type | Required | Meaning |
+|---|---|---|---|
+| `configuration` | object | yes | The whole configuration the run executed under, resolved once (configuration.md). The demand, the unit's content, `work` and the toolchain are deliberately outside it. |
+| `configuration.values` | object | yes | Every setting that can change a graded byte, resolved. Two runs executed under one configuration exactly when their `values` are equal. |
+| `configuration.sources` | object | yes | Where each setting came from: `argument` (the unit's `run.json`, or the caller), `file` (`harwell.toml`) or `default`. A declared value equal to the default is still `argument`. |
+| `configuration.file` | string \| null | yes | The `harwell.toml` the run read, or null. |
+
+## `jobs`
+
+| Key | Type | Required | Meaning |
+|---|---|---|---|
+| `jobs` | array | yes | One entry per job, in run order. A compile demand reports one job per demanded program. |
+| `jobs[].name` | string | yes | The job name. |
+| `jobs[].status` | string | yes | `ok`, `failed` or `blocked` (a chain predecessor failed and the job never ran). |
+| `jobs[].steps` | array | yes | One entry per step that the job reached, in run order. |
+| `jobs[].steps[].name` | string | yes | The step name; `PROCSTEP.STEP` for a step inside a procedure. |
+| `jobs[].steps[].status` | string | yes | `ran`, `failed`, `skipped` and the like. A COBOL step that returns rc 12 from an abend service still reads `ran` (see `termination`). |
+| `jobs[].steps[].rc` | integer \| null | yes | The return code, or null where the step produced none. |
+| `jobs[].steps[].pgm` |  |  | The program the step ran. |
+| `jobs[].steps[].kind` |  |  | `cobol`, `compile`, `utility` and the like. |
+| `jobs[].steps[].note` |  |  | One line for a person. It opens `STEP-TIMEOUT:` for a step ended at `step_timeout_s` and `S722 abend:` for one ended at its output limit. |
+| `jobs[].steps[].timed_out` |  |  | True when the engine ended the step at `step_timeout_s`. The note then names the program, every input DD with no data set behind it, and the CPU and wall time used. |
+| `jobs[].steps[].termination` |  |  | The abend the step ended on; absent when it reached none. Three shapes. A program check: `{check, code, at, unresolved, raw}`, `code` `S0C7` (data exception), `S0CB` (decimal divide) or `S0C9` (fixed-point divide); the step reads `failed`, the job is flushed and the abnormal DISP fires. An unhandled I/O condition: `{condition, code, status, file, statement, at, unresolved, raw}`, `condition` `IGZ0035S` (OPEN or CLOSE) or `IGZ0020S` (a status 4x logic error), `code` `U4038`, null for status 34; it moves the classification the same way. An abend service the codebase declares terminating: `{service, code, unresolved, raw}`, `code` the user completion code read off the service's job-log line; the step keeps `ran` and the job is flushed from it. |
+| `jobs[].steps[].cpu_s` |  |  | The CPU the step burned, user plus system, machine-independent. It is not only the program's: see `cpu_by_owner`. 0 on a compile step. |
+| `jobs[].steps[].wall_s` |  |  | Wall-clock seconds. Observability only. |
+| `jobs[].steps[].max_rss_kb` |  |  | The peak resident set of the process that ran the step, read at reap time. Null where no process was asked (a utility, a compile, a step ended before reap); never 0 for want of a reading. |
+| `jobs[].steps[].cpu_by_owner` |  |  | `cpu_s` split by who burned it: `program` (the customer's code), `resource_managers` (the generated `DFH*` modules), `utilities` (the engine's Python utilities). A CICS step carries the `program`/`resource_managers` split only when `run.json` sets `cpu_owners`. `{}` wherever one owner was not measured; never partial. See Accounting. |
+| `jobs[].steps[].stdout` |  |  | What the program displayed. |
+| `jobs[].steps[].stderr` |  |  | What the runtime printed on the error channel. |
+| `jobs[].steps[].stdout_bytes` |  |  | The true size of `stdout`. |
+| `jobs[].steps[].stderr_bytes` |  |  | The true size of `stderr`. |
+| `jobs[].steps[].stdout_path` |  |  | The step's `SYSOUT` spool file. |
+| `jobs[].steps[].stderr_path` |  |  | The step's `JESYSMSG` spool file. |
+| `jobs[].steps[].output_bytes` |  |  | `{DDNAME: n}` bytes written per output DD. |
+| `jobs[].steps[].input_bytes` |  |  | `{DDNAME: n}` bytes read per input DD. |
+| `jobs[].steps[].output_records` |  |  | `{DDNAME: n}` records written. A DD appears only where its geometry proves the count (known LRECL, RECFM not V or U, bytes divisible by it); never rounded. |
+| `jobs[].steps[].input_records` |  |  | `{DDNAME: n}` records read, under the same rule. |
+| `jobs[].steps[].dd_dsn` |  |  | `{DDNAME: DSN}` for every allocated DD. |
+| `jobs[].steps[].dd_lrecl` |  |  | `{DDNAME: n}` record lengths the catalog or the DD card proves. |
+| `jobs[].steps[].dd_recfm` |  |  | `{DDNAME: recfm}` record formats the catalog or the DD card proves. |
+| `jobs[].steps[].stubbed` |  |  | CALLed modules that linked as no-op stubs under `authoring` resolution. |
+| `jobs[].steps[].stubbed_sql` |  |  | The subset of `stubbed` that carried `EXEC SQL` and did not run it (`sql_callees: stub`). |
+| `jobs[].steps[].skeleton` |  |  | Callees the codebase ships as placeholders. |
+| `jobs[].steps[].unresolved_dynamic` |  |  | Dynamic CALL targets the resolver could not bind. |
+| `jobs[].steps[].neutralized_verbs` |  |  | `{VERB: n}` CICS verbs in the source that the online tier answered CONTINUE for. |
+| `jobs[].steps[].cics_commands` |  |  | `{FUNC: n}` CICS commands the programs executed, by translator function code, counted at the boundary to the resource managers. Identical on every host. Absent where the count could not be taken exactly. |
+| `jobs[].steps[].libraries` |  |  | What the search order answered, one entry per CALLed name: `{callee, library, member, shadowed?}`. `library` is the `[site] search_order` entry, or `runtime` for a Language Environment service or ADABAS (then no `member`). `shadowed` lists every other module of the name the search passed over, as `{library, member}`. |
+| `jobs[].steps[].load_module` |  |  | What the program search found for the step's program, by load module name: `{name, library, member, task_library?, shadowed?, note?}`. `task_library` is the data sets the step's STEPLIB (or its job's JOBLIB) concatenates, each `{dsn, carried}`; `shadowed` every other module of the name passed over; `note`, where nothing answered and a source offers the name only as an entry name, the `[site] syslmod` declaration that would make it answer. Empty for a program the deck carries in its own job stream. |
+| `jobs[].steps[].copybooks` |  |  | On a compile, one entry per copy member read: `{copybook, library, member}`. `library` is the `[site] copybook_order` entry, `assembled` for a BMS symbolic map, `product` for a CICS-supplied member, and absent when no library holds it. |
+| `jobs[].steps[].engine_notes` |  |  | Non-fatal engine findings: a neutralised CICS verb, a LINK or XCTL target the PPT lacks, an unpinned dynamic CALL, `<VERB> <OPTION> not modelled` (the command ran without that option, so its receiver kept its old value). On an SQL step, one line per EXEC SQL statement that ended with a negative SQLCODE, on every run and whether or not the program tested it and went on: `<member>:<line>: SQLCODE <code> (SQLSTATE <state>) on <statement>: <text>`, the text Db2 for z/OS Codes gives the code (or `SQLERRMC <runtime text>` for a code the attachment raises without the Db2 meaning), `(<n> times)` when it failed more than once. The line is the member's as written. None of it moves the step's `rc` or `status`. |
+| `jobs[].steps[].divergences` |  |  | The known divergences this step reached, shaped as `fidelity.divergences` with `job`, `step` and `pgm` null. |
+| `jobs[].steps[].cache` |  |  | `{hits, misses}` from the compile cache, one count per compiler invocation. `misses: 0` means nothing was compiled. A Db2 build replayed whole from the build store counts one hit per invocation the build comprised. Absent on a step that compiled nothing. |
+| `jobs[].steps[].stage` |  |  | On a compile step: the stage that produced the first diagnostic (`dialect`, `adasql`, `cics`, `gixpp`, `cobc`, `link`), or null when clean. |
+| `jobs[].steps[].first_error` |  |  | On a compile step: the first error line. |
+| `jobs[].steps[].hybrid` |  |  | On a compile step: whether the member went through the SQL pipeline. |
+| `jobs[].steps[].features` |  |  | On a compile step: facts about the program (SQL, CICS, file I/O). |
+| `jobs[].steps[].io` |  |  | On a compile step: the program's files. |
+| `jobs[].steps[].directives` |  |  | What the member's `PROCESS`/`CBL` cards asked for: `{read, acted_on, not_acted_on}`. `acted_on` covers `SQL`, `CICS`, `TRUNC`, `ADV` and `NOADV`; anything in `not_acted_on` (for example `ARITH(EXTEND)`) compiled without it. |
+| `jobs[].steps[].compiler_options` |  |  | `{TRUNC: {value, source}, ADV: {value, source}}`: TRUNC `value` `STD`, `OPT` or `BIN`; ADV `value` `ADV` or `NOADV`; `source` `process` (the member's card), `site` (`[site] trunc`, `[site] adv`) or `default`. Null when the compile failed before options were read. |
+| `jobs[].steps[].compile_record` |  |  | The evidence for "it compiled": `{command, cobc, flags, rc, stdout, stderr, module: {name, bytes, sha256} \| null, listing: {command, rc, text}}`. The listing is a separate `-fsyntax-only -t` pass. On the SQL pipeline it names both tools. |
+| `jobs[].steps[].sql_trace` |  |  | The GixSQL trace of an SQL step: whole below 100 KB, else the last 4,000 bytes. |
+| `jobs[].steps[].sql_trace_path` |  |  | The step's `SQLTRACE` spool file. |
+| `jobs[].steps[].executed` | object |  | The paragraphs and sections the step executed, when the run set `paragraph_trace`: `{PROGRAM: [NAME, ...]}`, each name once, in the order the step first entered it, upper case. Only the codebase's own programs: the engine's drivers, resource managers and stubs and the CICS translator's `DFHEI-` paragraphs are left out. `{}` on a traced COBOL step that executed none of them; absent on a step that was not traced and on a step that ran no COBOL (a utility). The trace itself is the step's `COBTRACE` spool file. |
+| `jobs[].job_id` |  |  | The job number the volume's spool assigned at submit, `JOB00001` upward. A job takes one whether or not its deck resolves. Absent on a compile report. |
+| `jobs[].log` |  |  | The job log text, one line per step. |
+| `jobs[].worst_rc` |  |  | The highest return code of the job's steps. |
+| `jobs[].note` |  |  | Why the job ended as it did, for a person. |
+| `jobs[].deck_warnings` |  |  | What the JCL reader warned of in this deck. |
+| `jobs[].spool` |  |  | Every spool file the job left, in the order the steps wrote them: `job`, `job_id`, `step`, `dd`, `recfm`, `lrecl`, `records`, `bytes`, `sha256`, `path` (on the volume) and `text` (inline, tailed to the last 4,000 characters above 100 KB; the file at `path` is never tailed). Absent on a compile report. |
+| `jobs[].cpu_s` |  |  | The sum of the steps' `cpu_s`. |
+| `jobs[].wall_s` |  |  | The sum of the steps' `wall_s`. |
+| `jobs[].max_rss_kb` |  |  | The largest step peak, or null when no step has one. |
+| `jobs[].cpu_by_owner` |  |  | The steps' `cpu_by_owner` summed; `{}` when any step's is. |
+
+## `fidelity`
+
+| Key | Type | Required | Meaning |
+|---|---|---|---|
+| `fidelity` | object | yes | Where the run did something other than the platform would, named. `clean` only when nothing below is non-empty. |
+| `fidelity.status` | `clean` \| `degraded` | yes | `clean` or `degraded`. `degraded` means the run reached a stub, a neutralised verb or a known divergence; nothing failed, but what it computed there is not what the site would have. |
+| `fidelity.divergences` | array |  | Known divergences this run reached, one entry per occurrence. A kind is declared where the construct was exercised, not where it is merely present. |
+| `fidelity.divergences[].kind` | string | yes | A kind from the list below; the row of that kind in [Known limits](/harwell/known-limits). |
+| `fidelity.divergences[].job` | string \| null | yes | The job, or null. |
+| `fidelity.divergences[].step` | string \| null | yes | The step, or null. |
+| `fidelity.divergences[].pgm` | string \| null | yes | The program, or null. |
+| `fidelity.divergences[].dataset` | string \| null | yes | The data set, or null. |
+| `fidelity.divergences[].member` | string \| null | yes | The source member, or null. |
+| `fidelity.divergences[].line` | integer \| null | yes | The 1-based line in `member`, or null. |
+| `fidelity.divergences[].what` | string | yes | What this run reached, for a person. |
+| `fidelity.neutralized` |  |  | Modules replaced by no-op stubs: `{job, step, pgm, modules, kind?}`, `kind` `stubbed-sql-call` or `unresolved-dynamic-call`. The engine's own modules (`DFH*`, Language Environment services, `MVSWAIT`) never appear. Each entry is a gap in the codebase to close. |
+| `fidelity.neutralized_verbs` |  |  | CICS verbs a region answered CONTINUE for: `{job, step, pgm, verbs: {VERB: n}}`. |
+| `fidelity.deck_warnings` |  |  | Every deck's warnings, folded. |
+
+## `timeline`
+
+| Key | Type | Required | Meaning |
+|---|---|---|---|
+| `timeline` | object |  | Where the call's time went: every phase of the call as a span, nested, timed on one clock, the way Bazel's --profile and BuildKit's traces record a build. Present on every report an entry point returns: the payload unpacked, the codebase resolved, the start state laid, the mapsets assembled, each member precompiled, compiled and linked with its cache hit or miss, each step run, the volume packed. Each span maps 1:1 onto an OpenTelemetry span. `harwell submit/start/unit --timeline` prints it read as its top phases. It is the call's, so the copy of the report kept on the volume does not carry it. |
+| `timeline.format` | `1` | yes | The timeline's own format number. |
+| `timeline.epoch` | number | yes | Unix seconds when the call started; every `start_s` is an offset from it. |
+| `timeline.wall_s` | number | yes | The call's wall seconds, from the first span's start to the report. |
+| `timeline.cpu_s` | number | yes | The call's cpu seconds: the engine's process and every child it reaped (compilers, the program). |
+| `timeline.dropped` | integer | yes | Spans not recorded because the call opened more than harwell.engine.timeline.MAX_SPANS. |
+| `timeline.spans` | array | yes | Every span, in the order it opened. |
+| `timeline.spans[].id` | integer | yes | The span's number in this call, from 1 (OTel span_id). |
+| `timeline.spans[].parent` | integer \| null | yes | The `id` of the span it ran inside; null for the root (OTel parent_span_id). |
+| `timeline.spans[].name` | string | yes | The phase: `payload.unpack`, `codebase.resolve`, `start_state`, `site.build`, `snapshot.restore`, `bms.assemble`, `job`, `step`, `hybrid.build`, `build.fetch`, `sql.callee`, `cics.translate`, `callee.scan`, `compile`, `link`, `step.run`, `volume.pack`, `store.commit` and the like. What varies (the member, the step) is an attribute, never the name. |
+| `timeline.spans[].start_s` | number | yes | Seconds from `epoch` to the span's start. |
+| `timeline.spans[].wall_s` | number | yes | The span's wall seconds, its children's included. |
+| `timeline.spans[].cpu_s` | number | yes | The span's cpu seconds, its children's and its reaped subprocesses' included. Spans that ran at once on threads each count the other's. |
+| `timeline.spans[].attrs` | object | yes | What the span was about: `member`, `step`, `pgm`, `tool` (cobc, gixpp), `cache` (`hit` or `miss`), `bytes`, `files` and the like; `error` names the exception a span ended with. |
+
+## `cics`
+
+| Key | Type | Required | Meaning |
+|---|---|---|---|
+| `cics` | object |  | Present with a region, or when the unit ships BMS source (then `bms` alone). See cics.md. |
+| `cics.ts_queues` | object |  | Temporary storage queues at the end of the run, by name. |
+| `cics.td_queues` | object |  | Intrapartition transient data queues: `{QNAME: {numitems, read}}`. An extrapartition queue is its data set on the catalog. |
+| `cics.channels` | object |  | Every container on the volume after the run: `{CHANNEL: {CONTAINER: {flength}}}`. |
+| `cics.counters` | object |  | Named counters the volume carries at the end: `{POOL: {NAME: {value, minimum, maximum}}}`, `value` being what the next GET takes. Omitted when none was defined. |
+| `cics.files` |  |  | The region's files. |
+| `cics.transactions` |  |  | The program control table: `{TRANSID: program}`. |
+| `cics.screens_in` |  |  | How many screens the case gave. |
+| `cics.terminal_waits` |  |  | Present when a task RECEIVEd conversationally (again, or after it SENT): `[{map, mapset, answered}]`, one per wait, `answered` false where the case had no screen left for it. |
+| `cics.screens_unread` |  |  | Present when screens arrived after the conversation had ended: `[{map, mapset}]`, one per screen that reached no task. |
+| `cics.abends` |  |  | Present when a task abended: `[{task, transid, abcode, program, terminal, backed_out, detail, at?, program_check?: {code, interruption}}]`, one per task, in the order they ended. The task ended and the region went on; `backed_out` says dynamic transaction backout ran (false for a task whose process ended on a signal: its SQL went with it, its recoverable files and queues stand), `detail` what the abend said (the runtime's message for a program check, with `at` its statement, or the condition and the command), and the terminal was sent DFHAC2206. See cics.md. |
+| `cics.maps_sent` |  |  | Every SEND MAP, in order: `{map, mapset, length, data}` (the symbolic map's bytes). |
+| `cics.screens_out` |  |  | Every send painted on its physical map, in send order, messages between the maps: `{map, mapset, rendered: true, size, text, fields: [{name, row, col, length, value, source, attrb, attr_ebcdic, color, hilight}], cursor}`, or `{map, mapset, rendered: false, reason}` for a mapset with no macro source; a SEND TEXT is `kind: text` and a SEND CONTROL ERASE `kind: erase`, the blank screen it leaves. One entry per send, not per turn. |
+| `cics.text_sent` |  |  | Every SEND TEXT and terminal-control SEND FROM: `{text, length, erase, raw}`. |
+| `cics.bms` |  |  | `{assembled: [{mapset, member, source, maps, outranks}], refused: {MAPSET: reason}, warnings, map_checks?}`. `map_checks`, present when one fires: each `SEND MAP ... FROM(x)` or `RECEIVE MAP ... INTO(x)` of a program whose `x`, as the program declares it, lays out otherwise than the symbolic map assembled from the mapset's BMS source: `{file, line, verb, map, mapset, record, bms, differences: [{field, offset, length, map_offset, map_length}], message}`. A developer aid: nothing on z/OS checks it, and it judges nothing. |
+| `cics.uow` |  |  | Every unit-of-work boundary: `{boundary: commit \| rollback, at: syncpoint \| task end \| abend, files: {FILE: {W, R, D}}, ts: {QUEUE: n}, sql, backed_out?}`. A task end that covered nothing is not recorded. |
+| `cics.enq` |  |  | `[{action: enq \| deq, resource}]`; absent when empty. |
+| `cics.backed_out` |  |  | The change count of each rollback; absent when empty. |
+| `cics.returns` |  |  | Every RETURN TRANSID hand-off: `{transid, commarea, channel?}`. |
+| `cics.td_queues_declared` |  |  | `{QNAME: extra \| intra \| indirect}`. |
+| `cics.started` |  |  | Every START request: `{reqid, transid, due_s, status: pending \| ran \| cancelled, data, rtransid, rtermid, queue, source: start \| trigger \| listener}`. |
+| `cics.connections` |  |  | Every connection the sockets listener accepted, in declaration order: `{connection, client: {address, port}, tim, transid, client_in_data, startup: KC \| IC, status: refused \| given \| open \| closed, reason?, due_s?, descriptor?, closed_by?: server \| task end, unread?, sent?}`. `sent` is the bytes the servers sent on it, one character per byte; `unread` what the client sent that no server read. See cics.md. |
+| `cics.socket_refusals` |  |  | `{FUNCTION: n}`: the EZASOKET calls refused because the function, or its flags, are not modelled. Absent when none was. |
+| `cics.csd` |  |  | How the region was installed from CSD source: `{sources, definitions: {TYPE: n}, refused: [{source, line, card, why}], not_carried: [{source, line, definition, what, card}]}`. |
+
+## `containment`
+
+| Key | Type | Required | Meaning |
+|---|---|---|---|
+| `containment` | null \| object | yes | Null, or for a contained run (`submit(..., contained=True)`) `{job_uid, job_uids: [first, last]}`: the user the job ran as, and the range such users come from. |
+| `containment.job_uid` | integer | yes | The uid the job ran as. |
+| `containment.job_uids` | array | yes | The first and last uid of the range job users are taken from. |
+
+## Next
+
+- [The report](/harwell/report)
+- [Known limits](/harwell/known-limits)

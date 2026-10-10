@@ -1,90 +1,102 @@
 ---
 title: "Known limits"
-description: "Where Harwell differs from the mainframe, what to do about it, and how a run tells you it reached one."
+description: "Where Harwell 0.41.0 differs from the mainframe, how a run shows it, and what to do about it."
 ---
 
-Harwell's source lists 72 known places where it does not do what the mainframe does, each with a workaround. A fixed one leaves the list. This page groups them by area; each row names its `kind`, the stable name a report uses.
+Harwell's source lists 72 known places where it does not do what the mainframe does, each with a workaround. A fixed one leaves the list. Each has a stable name, its `kind`.
 
-## How a run tells you
+## How a run shows it
 
 | On the report | Means |
 | --- | --- |
-| `fidelity.status: clean` | Nothing below happened |
-| `fidelity.status: degraded` | The run reached a stub, a neutralised CICS command or a declared divergence. Nothing failed, but what it computed there is not what the site would have |
-| `fidelity.divergences[]` | Each divergence the run reached, with its `kind`, job, step, program, data set, member and line |
-| `fidelity.neutralized` | Each CALLed module replaced by a no-op stub: a gap in the codebase to close |
-| `fidelity.neutralized_verbs` | Each CICS command the region answered without running |
-| A refused step | A construct Harwell cannot answer, refused with the reason |
+| **Declared** | The kind is on `fidelity.divergences` with its job, step, program, data set, member and line, and `fidelity.status` reads `degraded`. Eleven kinds are declared |
+| **Refused** | The step or job is refused by name, with the reason and a return code. Nothing is written |
+| **Named** | Not a divergence entry, but the report names it elsewhere: a neutralised command, a stub, an engine note on the step, an assembler warning, an abend |
+| **Not shown** | Nothing on the report marks it. These are in [the last section](#not-detectable-in-a-run); check your code against them yourself |
 
-Eleven kinds are declared on a run when it reaches them, marked **declared** below. The rest cannot be detected from inside a run (an uninitialised byte, a scheduler's choice, a grader's reading of the output), so no run names them. Check your code against those rows yourself.
+`fidelity.status: clean` means nothing was stubbed or neutralised and no declared kind was reached. It does not rule out the rows marked not shown.
 
 ## COBOL and data
 
-| Where | Workaround | Kind |
+| Symptom | How a run shows it | Workaround |
 | --- | --- | --- |
-| WORKING-STORAGE bytes no statement assigns: undefined on the mainframe, the compiler's default byte here | Leave never-assigned bytes out of a comparison | `unassigned-working-storage` |
-| `TRUNC(OPT)` with a binary receiver given a value wider than its PICTURE; DISPLAY of a binary item | Keep binary receivers inside their PICTURE; compare binary fields by value, not DISPLAY text | `trunc-opt` |
-| Invalid data in zoned or packed fields: letters in a zoned digit, MOVE or compare of bad packed data, sign handling of some packed MOVEs | Seed numeric fields with valid digits; declare text fields `PIC X` | `zoned-invalid-digit`, `move-invalid-data`, `compare-invalid-digits`, `packed-move-sign` |
-| Character comparison over signed zoned data or packed bytes the compiler cannot place | Compare numeric fields as numbers | `zoned-sign-collation`, `group-compare-layout-unknown` |
-| Binary divide by zero: abend code S0C9 or S0CB may differ | Check that the step abended, not which code | `binary-divide-exception` |
-| A file declared only inside a CALLed subprogram (**declared**) | Add the SELECT to the main program | `callee-declared-file` |
-| A fixed FD whose record length the LRECL contradicts: the step is refused before the program runs (**declared**) | Make LRECL agree, or code `RECORD CONTAINS 0` | `fixed-attribute-conflict` |
-| An asterisk in columns 1 to 6, read as a comment (**declared**) | Check the member is card-formatted | `sequence-area-asterisk` |
-| Language Environment services Harwell does not provide | Call a provided service, or ship the behaviour as a program | `le-services` |
+| A file declared only in a CALLed subprogram bypasses the code-set conversion and the record-length check | Declared `callee-declared-file` | Add the SELECT to the main program, or keep the file ASCII-staged with FD and DCB agreeing |
+| A fixed FD whose record length the LRECL contradicts: the mainframe fails the OPEN with status 39; here the step is refused before the program runs, rc 12 | Declared `fixed-attribute-conflict` | Make LRECL agree with the FD, or code `RECORD CONTAINS 0` |
+| A card with an asterisk in columns 1 to 6 is read as a comment and commented out | Declared `sequence-area-asterisk` | Check the member is card-formatted |
+| A letter written into a zoned digit during the run ends the step S0C7 | Named: the step's abend | Seed zoned fields with digits; declare text `PIC X` (`zoned-invalid-digit`) |
+| MOVE or numeric compare of invalid zoned or packed data ends S0C7 where a NOINVDATA site may not | Named: the step's abend | Keep invalid bytes out of moved and compared fields (`move-invalid-data`, `compare-invalid-digits`) |
+| A Language Environment service Harwell does not provide | Named: a stubbed callee on `fidelity.neutralized` | Call a provided service, or ship the behaviour as a program (`le-services`) |
 
-## Batch
+## Batch: JCL and utilities
 
-| Where | Workaround | Kind |
+| Symptom | How a run shows it | Workaround |
 | --- | --- | --- |
-| Two jobs running at once: run one after the other here (**declared** where they share a data set exclusively) | Order dependent jobs explicitly | `concurrent-jobs` |
-| A rerun after an abend part-way through | Check the commit boundary from outside | `abend-rerun` |
-| Checkpoint restart, `RESTART=(step,checkid)` | Restart at a step boundary | `checkpoint-restart` |
-| `RESTART=` naming a step that calls a procedure | Restart at `call.procstep` | `restart-proc` |
-| JOB COND after a step that abended | Code the test on the step's own EXEC COND | `job-cond-abend` |
-| Lower-case letters in a JCL name field | Upper case | `jcl-name-case` |
-| Program fetch, and a program that branches on its own data set name | Declare load libraries and system libraries in `harwell.toml` | `program-fetch`, `dataset-name-service` |
-| Partitioned data set directories | Name members explicitly; compare member contents | `partitioned-data-set` |
-| Volume inside the batch window | Make no capacity claims from a run | `batch-window-volume` |
-| DFSORT edge cases: EBCDIC-only output detail, some formats and constants, non-COBOL exits, installation options, missing control cards | One workaround per row in the source; most are "state it explicitly" | `sort-*`, `missing-control-card` |
+| Two chain jobs no dependency orders, sharing a data set one holds exclusively, run one after the other | Declared `concurrent-jobs` | Order dependent jobs explicitly |
+| Checkpoint restart, `RESTART=(step,checkid)` | Refused: the job is not run; the deck warning says why | Restart at a step boundary (`checkpoint-restart`) |
+| A step's task library the run does not carry is passed over, not failed at allocation | Named: the step's `load_module.task_library` | Declare load libraries as system libraries (`program-fetch`) |
+| DFSORT: a format or test owned by another component, an unnormalised `FL` key, `Y2` in INCLUDE/OMIT, an unstated installation option, a non-COBOL exit | Refused, rc 8 or 16 | Declare the field in a format the comparator decodes; state site options in `harwell.toml` (`sort-foreign-format`, `sort-fl-free-form`, `sort-y2-condition`, `sort-installation-option`, `sort-exits`) |
+| DFSORT: invalid decimal digit under an edit or conversion | Refused, rc 16, naming the field and its bytes | Run ICETOOL VERIFY over the field first (`sort-invalid-digit`) |
+| A control card in a library the codebase lacks | Refused, rc 16, naming the DD and data set | Add the member (`missing-control-card`) |
+| DSNUTILB LOAD with no field specifications over an unsupported type; unload option words | Refused, rc 8 | State `POSITION` field specs; remove the options (`load-default-layout`, `unload-options`) |
 
 ## Db2 on SQLite
 
-| Where | Workaround | Kind |
+| Symptom | How a run shows it | Workaround |
 | --- | --- | --- |
-| Ordering a character expression that is not a column | Order on the column itself | `sql-character-expression-collation` |
-| DECIMAL or DIGITS over an operand of unstated type; integer overflow | Declare host variables of listed types; wrap in `DECIMAL(...)` | `sql-decimal-untyped-operand`, `digits-untyped-expression`, `sql-integer-overflow` |
-| Stored procedures | Keep them external COBOL | `stored-procedure` |
-| Sensitive scrolling and partial rowset access | Declare scrollable cursors INSENSITIVE | `sensitive-scroll-and-row-of-rowset` |
-| DDL in Db2's own storage spelling; USA or EUR dates into a table a job creates | Seed such tables up front; write dates as YYYY-MM-DD | `db2-storage-ddl`, `runtime-table-date-form` |
-| DSNUTILB LOAD with no field specifications; unload option words | State field positions; remove the options | `load-default-layout`, `unload-options` |
+| A USA or EUR date written into a DATE column of a table a job step creates | Named: the step's engine notes | Declare the table in the seed, or write YYYY-MM-DD (`runtime-table-date-form`) |
+| Decimal arithmetic over an operand of a type the precompiler does not list falls back to SQLite arithmetic | Named: the step's engine notes | Declare host variables of listed types (`sql-decimal-untyped-operand`) |
+| `DIGITS` of an expression of unstated type | Refused by name | Wrap the operand in `DECIMAL(...)` or `INTEGER(...)` (`digits-untyped-expression`) |
+| LANGUAGE SQL procedures; FETCH SENSITIVE and partial rowset access | Refused by name | Keep procedures external COBOL; declare scrollable cursors INSENSITIVE (`stored-procedure`, `sensitive-scroll-and-row-of-rowset`) |
+| `AS IDENTITY`, `WITH DEFAULT`, a qualified `REFERENCES`, `FOR BIT DATA` in DDL a job runs | Refused by name, rc 8 | Seed such tables up front (`db2-storage-ddl`) |
 
-## VSAM and IDCAMS
+## VSAM
 
-| Where | Workaround | Kind |
+| Symptom | How a run shows it | Workaround |
 | --- | --- | --- |
-| KSDS key order on a toolchain without the collation patch (**declared**) | Run on the published toolchain | `indexed-key-order` |
-| OPEN OUTPUT of a KSDS with no DEFINE CLUSTER | Define the cluster with IDCAMS first | `ksds-open-output` |
-| LISTCAT statistics beyond REC-TOTAL; EXPORT's portable format | Compare REC-TOTAL and geometry only; keep EXPORT and IMPORT in one run | `listcat-statistics`, `export-portable-format` |
+| KSDS key order is ASCII on a toolchain without the collation patch | Declared `indexed-key-order` | Run on the published toolchain |
 
-## Online (CICS)
+## Online: CICS and BMS
 
-| Where | Workaround | Kind |
+| Symptom | How a run shows it | Workaround |
 | --- | --- | --- |
-| One task at a time: START runs after the starting task ends (**declared**); ENQ is always granted (**declared**) | Check a started task's effect on the next screen; check that the right resource was enqueued | `cics-start`, `cics-enq` |
-| A program check ends the task ASRA and backs out (**declared**); a task killed by a signal is not backed out (**declared**) | Test coded abend paths; treat a killed task's files as written | `cics-system-abend`, `cics-task-signal` |
-| Screens the case gives and the tasks did not meet (**declared**) | Give every attention the user makes, in order | `cics-terminal-input` |
-| CICS Sockets listener (**declared**) | Script each client's whole conversation | `cics-sockets` |
-| Recoverable resources not backed out; unit of work size; region storage after an abend | Declare recovery on the FILE; syncpoint inside long loops | `cics-recoverable-resources`, `cics-uow-size`, `cics-abend-region-storage` |
-| Abend in a CALLed subprogram; subprogram state across LINKs | Put HANDLE ABEND where it can abend; carry state in the COMMAREA | `cics-call-abend`, `cics-link-subprogram-state` |
-| BMS: ship the `.bms` source; INITIAL longer than LENGTH; VALIDN=TRIGGER | Correct the source; name the attention in the case | `bms-map`, `bms-initial-length`, `bms-validn-trigger` |
-| Remote TD queues, DCOUNTER, INQUIRE, CEMT/CECI/CEDF details, SEND TEXT paging, container conversion, EIBFN for four SPI commands | One workaround per row in the source | `cics-*` |
+| A started task runs after the task that started it, not beside it | Declared `cics-start` | Check its effect on the next screen |
+| ENQ is always granted: one task runs at a time | Declared `cics-enq` | Check that the right resource was enqueued |
+| A program check ends the task ASRA and backs it out, with no HANDLE ABEND exit given control | Declared `cics-system-abend` | Test the abend paths the program codes |
+| A task killed by a signal is not backed out | Declared `cics-task-signal` | Treat its files and queues as written |
+| The case's screens and the tasks did not meet | Declared `cics-terminal-input` | Give every attention the user makes, in order, the entry included |
+| A sockets client was replayed, or a sockets call is not modelled | Declared `cics-sockets` | Script each client's whole conversation |
+| A mapset with no macro source; a field off the map | Named: APCT abend; the assembler refuses by name | Ship the `.bms` (`bms-map`) |
+| `INITIAL=` longer than `LENGTH=` is cut | Named: an assembler warning with both lengths | Correct the source (`bms-initial-length`) |
+| A remote transient data queue | Refused by name | Declare the local queue it stands for (`cics-transient-data`) |
+| A unit of work past its size bound | Named: NOSPACE on the command | Syncpoint inside long loops (`cics-uow-size`) |
+| DCOUNTER; INQUIRE and SET other than INQUIRE PROGRAM; SEND TEXT paging; GET CONTAINER conversion | Named: neutralised commands on the step | Use COUNTER; branch on EIBRESP; convert in the program (`cics-dcounter`, `cics-inquire`, `cics-send-text`, `cics-container-conversion`) |
+| CEMT SET on an attribute or resource it does not take | Refused by name | Read other attributes off the definition (`cics-supplied`) |
 
-## Comparing output
+## Not detectable in a run
 
-| Where | Workaround | Kind |
+Nothing on the report marks these. Each is a reading of storage, timing or output that a run cannot make.
+
+| Symptom | Kind | Workaround |
 | --- | --- | --- |
-| Two encodings of the same figure | Compare whole records byte for byte when the encoding matters | `decoded-field-compare` |
-| REDEFINES branches and items under a group OCCURS | Compare the record byte-strict | `layout-redefines-occurs` |
+| WORKING-STORAGE bytes no statement assigns hold the compiler's default byte, not undefined storage | `unassigned-working-storage` | Leave never-assigned bytes out of a comparison |
+| `TRUNC(OPT)` compiles as STD; DISPLAY of a binary item shows a separate sign | `trunc-opt` | Keep binary receivers inside their PICTURE; compare binary fields by value |
+| On a stock GnuCOBOL, an alphanumeric-to-packed or unsigned-to-signed packed MOVE keeps the wrong sign | `packed-move-sign` | Run on the published toolchain; `toolchain.libcob` says which ran |
+| A binary divide by zero ends S0CB where the mainframe may end S0C9 | `binary-divide-exception` | Check that the step abended, not which code |
+| Character comparison over signed zoned data, or packed bytes the compiler cannot place | `zoned-sign-collation`, `group-compare-layout-unknown` | Compare numeric fields as numbers |
+| A program that branches on its own data set name reads blanks under a placeholder module | `dataset-name-service` | Put the real member in a system library |
+| An abend part-way, then a rerun: a case runs whole or not at all | `abend-rerun` | Check the commit boundary from outside |
+| Volume inside the batch window | `batch-window-volume` | Make no capacity claims from a run |
+| JOB COND after an abended step; RESTART= at a step that calls a procedure | `job-cond-abend`, `restart-proc` | Code the test on the step's own EXEC COND; restart at `call.procstep` |
+| Lower-case letters in a JCL name field are accepted | `jcl-name-case` | Upper case |
+| A partitioned data set has no directory | `partitioned-data-set` | Name members explicitly |
+| DFSORT: `AC` over unmapped bytes, `X'...'` constants against character fields, output detail on an EBCDIC-staged volume | `sort-ac-unmapped-byte`, `sort-hex-constant`, `sort-ebcdic-output` | Use `C'...'` constants; keep `AC` keys printable |
+| SQL: ordering a character expression; integer overflow answers no error | `sql-character-expression-collation`, `sql-integer-overflow` | Order on the column; keep arithmetic in range |
+| OPEN OUTPUT of a KSDS with no DEFINE CLUSTER creates it | `ksds-open-output` | Define the cluster with IDCAMS first |
+| LISTCAT counts print 0; EXPORT writes Harwell's own format | `listcat-statistics`, `export-portable-format` | Compare REC-TOTAL and geometry only; keep EXPORT and IMPORT in one run |
+| CICS: transient data never backed out; region storage after an abend; abend in a CALLed subprogram; subprogram state across LINKs; EIBFN for four SPI commands; named counters per volume | `cics-recoverable-resources`, `cics-abend-region-storage`, `cics-call-abend`, `cics-link-subprogram-state`, `cics-eibfn`, `cics-named-counter` | Declare recovery on the FILE; put HANDLE ABEND where it can abend; carry state in the COMMAREA; branch on EIBRESP |
+| BMS `VALIDN=TRIGGER` is carried, not enforced | `bms-validn-trigger` | Name the attention in the case |
+| The engine's own modules (`DFH*`, some LE services, `MVSWAIT`) never appear as stubs; no time passes | `engine-modules` | Set the clock when time must pass |
+| Comparing output: two encodings of one figure; REDEFINES branches and group OCCURS | `decoded-field-compare`, `layout-redefines-occurs` | Compare whole records byte for byte |
 
 ## Next
 
