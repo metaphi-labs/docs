@@ -1,0 +1,18 @@
+---
+title: "Idempotency"
+description: "Retry POST /v1/kennet/twins safely with an Idempotency-Key."
+---
+
+Send an `Idempotency-Key` header on `POST /v1/kennet/twins`: any unique string of 1 to 255 printable ASCII characters, such as a UUID. If you retry with the same key, you never start a second run.
+
+| You send, within 24 hours | You get |
+| --- | --- |
+| The same key and the same request | The twin the first request made: `202`, the same `id`, and `Idempotent-Replayed: true` |
+| The same key and a different request | `409 idempotency_key_reused` (`idempotency_error`) |
+| The same key while the first request is still being handled | `409 idempotency_key_in_use`, retryable, with `Retry-After` |
+
+The same request means the same file name, the same file bytes, the same `key` and the same `confidential` list.
+
+A request that failed with any error holds no key, so you can retry it with the same key. After 24 hours a key is forgotten and can be used again.
+
+Keys are kept per organization and per mode. A test key and a live key never share a key.

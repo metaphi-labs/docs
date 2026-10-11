@@ -1,0 +1,96 @@
+---
+title: "Errors"
+description: "One error shape, its HTTP statuses and every code."
+---
+
+Every non-2xx response carries one object:
+
+```json
+{
+  "error": {
+    "type": "rate_limit_error",
+    "code": "rate_limited_concurrent",
+    "message": "3 runs are already going for this organization; start another when one ends",
+    "retryable": true,
+    "request_id": "req_6f1c0d9e2b7a4c3d8e5f1a2b"
+  }
+}
+```
+
+| Field | Description |
+| --- | --- |
+| `type` | The error's family: one of the types below |
+| `code` | A stable code. Switch on this, never on the message. Once published, a code is never renamed or reused |
+| `message` | A sentence a person can read. Its wording may change |
+| `retryable` | Whether the same request, sent again unchanged, may succeed later |
+| `request_id` | The request's id. Quote it to support |
+
+Every response, success or error, carries a `Request-Id` header with the same id.
+
+## Statuses
+
+| Status | Type | Meaning |
+| --- | --- | --- |
+| 400 | `invalid_request_error` | The request is invalid; the message says which part |
+| 401 | `auth_error` | No API key, or one that does not work |
+| 402 | `billing_error` | The organization's prepaid balance is used up |
+| 403 | `auth_error` | The key does not hold access to twins |
+| 404 | `invalid_request_error` | No such object for this key, or no such route |
+| 405 | `invalid_request_error` | The route does not take that method |
+| 409 | `idempotency_error`, `invalid_request_error` | An idempotency key conflict, or a twin with no content yet |
+| 410 | `invalid_request_error` | The twin's content is past its 7 days |
+| 413 | `invalid_request_error` | The file is too large |
+| 429 | `rate_limit_error` | A run limit. Wait for the `Retry-After` seconds |
+| 500 | `api_error` | An unexpected failure; nothing was started or charged |
+| 503 | `api_error` | Unavailable for a moment. Wait for the `Retry-After` seconds |
+
+## Codes
+
+| Code | Status | Retryable | Meaning |
+| --- | --- | --- | --- |
+| `missing_api_key` | 401 | no | No API key was sent |
+| `invalid_api_key` | 401 | no | The API key is unknown, revoked or mistyped |
+| `insufficient_scope` | 403 | no | The API key does not hold access to twins |
+| `auth_unavailable` | 503 | yes | The API key could not be checked; nothing was started |
+| `out_of_credit` | 402 | no | The organization's prepaid balance is used up |
+| `balance_unavailable` | 503 | yes | The balance could not be checked; nothing was started |
+| `rate_limited_concurrent` | 429 | yes | The organization has the most runs going at once (`Retry-After: 60`) |
+| `rate_limited_daily` | 429 | yes | The organization has started the most runs a day takes (`Retry-After: 3600`) |
+| `invalid_filename` | 400 | no | The file name is not one the upload takes |
+| `invalid_key` | 400 | no | `key` is not 64 hex characters |
+| `invalid_confidential` | 400 | no | `confidential` names too many names, or names that are too long |
+| `parameter_invalid` | 400 | no | A parameter is missing or invalid; the message names it |
+| `unknown_api_version` | 400 | no | The `Metaphi-Version` header names no version this API serves |
+| `body_invalid` | 400 | no | The request body could not be read |
+| `file_empty` | 400 | no | The uploaded file is empty |
+| `file_too_large` | 413 | no | The file is larger than a twin takes: 50 MiB, or 256 KiB in test mode |
+| `body_too_large` | 413 | no | A request body other than a twin's upload is larger than 64 KiB |
+| `idempotency_key_invalid` | 400 | no | The Idempotency-Key header is empty, too long or not printable ASCII |
+| `idempotency_key_reused` | 409 | no | The Idempotency-Key was used with a different request in the last 24 hours |
+| `idempotency_key_in_use` | 409 | yes | A request with the same Idempotency-Key is still being handled |
+| `resource_missing` | 404 | no | No such object for this key's organization and mode |
+| `route_missing` | 404 | no | No such route |
+| `method_not_allowed` | 405 | no | The route does not take that method |
+| `twin_not_completed` | 409 | yes | The twin is queued or running; its content is not ready |
+| `twin_failed` | 409 | no | The twin failed and has no content |
+| `content_expired` | 410 | no | The twin's content is past its 7-day retention |
+| `webhook_url_invalid` | 400 | no | The webhook URL is not https, or not on a public host |
+| `webhook_endpoint_limit` | 400 | no | The organization already has as many webhook endpoints as it may |
+| `webhooks_unavailable` | 503 | yes | Webhooks are not available just now |
+| `unavailable` | 503 | yes | The request could not be handled; nothing was started or charged |
+| `internal_error` | 500 | yes | An unexpected failure; nothing was started or charged |
+
+## Run failures
+
+A twin that fails has an `error` field (`{type, code, message, retryable}`), and the `kennet.twin.failed` event carries the same twin. For these errors, `retryable` says whether uploading the same trace again may succeed. A failed run is never charged.
+
+| Code | Type | Retryable | Meaning |
+| --- | --- | --- | --- |
+| `upload_gone` | `run_error` | yes | The upload expired before the run read it; upload it again |
+| `not_text` | `run_error` | no | The trace is not UTF-8 text or JSON |
+| `too_large` | `run_error` | no | The trace has more distinct text than one run reads; split it |
+| `session_failed` | `run_error` | yes | A session did not complete; nothing was written or charged |
+| `budget_exceeded` | `run_error` | yes | The run reached its spending limit; nothing was written or charged |
+| `run_failed` | `run_error` | yes | The run failed after its sessions; nothing was written or charged |
+| `twin_unclean` | `run_error` | no | The twin did not pass its check; nothing was written or charged |
+| `run_unavailable` | `api_error` | yes | The run could not be carried out; nothing was written or charged |

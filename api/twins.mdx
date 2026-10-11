@@ -1,0 +1,99 @@
+---
+title: "Twins"
+description: "The twin object, and creating, retrieving, listing and downloading twins."
+---
+
+## The twin object
+
+```json
+{
+  "id": "twin_t-2f9c...",
+  "object": "kennet.twin",
+  "status": "completed",
+  "created": 1760054400,
+  "completed": 1760054580,
+  "filename": "trace.jsonl",
+  "error": null,
+  "livemode": true
+}
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | string | `twin_` followed by its id |
+| `object` | string | Always `kennet.twin` |
+| `status` | string | `queued`, `running`, `completed` or `failed` |
+| `created` | integer | Unix seconds |
+| `completed` | integer or null | Unix seconds when it ended, whether it completed or failed |
+| `filename` | string | The uploaded file's name |
+| `error` | object or null | Why it failed: `{type, code, message, retryable}`. See [run failures](/api/errors#run-failures) |
+| `livemode` | boolean | `false` for a test-mode twin |
+
+For a failed twin, `retryable` says whether uploading the same trace again may succeed. A failed run is never charged.
+
+## Create a twin
+
+`POST /v1/kennet/twins`, as `multipart/form-data`.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `file` | yes | The trace: JSON, JSON Lines or text. At most 50 MiB (256 KiB in test mode). Its name may use letters, digits, `.`, `-` and `_`, as `trace.jsonl` |
+| `key` | no | 64 hex characters that key the synthetic values. The same key gives one person the same synthetic value in every trace of a corpus. If you leave it out, each trace gets a fresh key. Keep the key yourself: it is not stored |
+| `confidential` | no | An organisation to treat as confidential although it is public, such as your client. It is replaced, along with everything that names it. Repeat the field once per organisation, at most 50, each at most 200 characters |
+
+Send an [`Idempotency-Key`](/api/idempotency) header so a retried request never starts a second run.
+
+```sh
+curl https://api.metaphi.ai/v1/kennet/twins \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Idempotency-Key: 5d3e1c1a-..." \
+  -F file=@trace.jsonl \
+  -F key=$CORPUS_KEY \
+  -F confidential="Acme Holdings"
+```
+
+The response is `202 Accepted` with the twin, `queued`, and a `Location` header naming it. A live run checks your organization's balance first: `402 out_of_credit` means it is used up and nothing was started.
+
+## Retrieve a twin
+
+`GET /v1/kennet/twins/{id}` returns the twin as it stands now. A twin belongs to the organization and mode of the key that made it. Any other key gets `404 resource_missing`.
+
+## List twins
+
+`GET /v1/kennet/twins` returns your twins, newest first.
+
+| Query | Description |
+| --- | --- |
+| `limit` | 1 to 100; default 10 |
+| `starting_after` | A twin id. Returns the page after it |
+
+```json
+{ "object": "list", "data": [ { "id": "twin_...", "object": "kennet.twin" } ], "has_more": true, "url": "/v1/kennet/twins" }
+```
+
+While `has_more` is true, pass the last twin's `id` as `starting_after` to get the next page.
+
+## Download a twin's content
+
+`GET /v1/kennet/twins/{id}/content` streams the twinned file once the twin has completed.
+
+The `Content-Type` follows the uploaded file's extension:
+
+| Extension | Content-Type |
+| --- | --- |
+| `.json` | `application/json` |
+| `.jsonl`, `.ndjson` | `application/x-ndjson` |
+| anything else | `text/plain; charset=utf-8` |
+
+| Status | Code | When |
+| --- | --- | --- |
+| 200 | | The file |
+| 409 | `twin_not_completed` | Still `queued` or `running`; retry later |
+| 409 | `twin_failed` | The twin failed and has no content |
+| 410 | `content_expired` | More than 7 days since it completed; the content is deleted |
+
+## What is kept
+
+- The upload is deleted when its run ends, whether it completed or failed.
+- The twin's content is kept for 7 days after it completes, and only your organization's keys reach it in the mode that made it.
+- The table of what became what is neither returned nor stored.

@@ -117,6 +117,26 @@
             ]
           }
         ]
+      },
+      {
+        "tab": "Twin API",
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": [
+              "api/overview"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "api/twins",
+              "api/idempotency",
+              "api/errors",
+              "api/webhooks"
+            ]
+          }
+        ]
       }
     ]
   },
