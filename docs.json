@@ -107,7 +107,7 @@
           {
             "group": "Traces",
             "pages": [
-              "taskforge/anonymize"
+              "taskforge/twin"
             ]
           },
           {
@@ -147,6 +147,10 @@
     {
       "source": "/",
       "destination": "/overview"
+    },
+    {
+      "source": "/taskforge/anonymize",
+      "destination": "/taskforge/twin"
     }
   ],
   "seo": {
