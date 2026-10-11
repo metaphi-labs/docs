@@ -60,6 +60,7 @@ Every response, success or error, carries a `Request-Id` header with the same id
 | `invalid_key` | 400 | no | `key` is not 64 hex characters |
 | `invalid_confidential` | 400 | no | `confidential` names too many names, or names that are too long |
 | `parameter_invalid` | 400 | no | A parameter is missing or invalid; the message names it |
+| `unknown_api_version` | 400 | no | The `Metaphi-Version` header names no version this API serves |
 | `body_invalid` | 400 | no | The request body could not be read |
 | `file_empty` | 400 | no | The uploaded file is empty |
 | `file_too_large` | 413 | no | The file is larger than a twin takes: 50 MiB, or 256 KiB in test mode |
@@ -80,7 +81,7 @@ Every response, success or error, carries a `Request-Id` header with the same id
 
 ## Run failures
 
-A twin that fails has an `error` field (`{type, code, message, retryable}`), and the `twin.failed` event carries the same twin. For these errors, `retryable` says whether uploading the same trace again may succeed. A failed run is never charged.
+A twin that fails has an `error` field (`{type, code, message, retryable}`), and the `kennet.twin.failed` event carries the same twin. For these errors, `retryable` says whether uploading the same trace again may succeed. A failed run is never charged.
 
 | Code | Type | Retryable | Meaning |
 | --- | --- | --- | --- |

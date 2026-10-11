@@ -1,9 +1,9 @@
 ---
 title: "Idempotency"
-description: "Retry POST /v1/twins safely with an Idempotency-Key."
+description: "Retry POST /v1/kennet/twins safely with an Idempotency-Key."
 ---
 
-Send an `Idempotency-Key` header on `POST /v1/twins`: any unique string of 1 to 255 printable ASCII characters, such as a UUID. If you retry with the same key, you never start a second run.
+Send an `Idempotency-Key` header on `POST /v1/kennet/twins`: any unique string of 1 to 255 printable ASCII characters, such as a UUID. If you retry with the same key, you never start a second run.
 
 | You send, within 24 hours | You get |
 | --- | --- |

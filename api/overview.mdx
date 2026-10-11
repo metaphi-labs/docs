@@ -10,17 +10,23 @@ One trace file in, one twinned file out, in the same format.
 ## Base URL
 
 ```
-https://api.metaphi.ai/v1
+https://api.metaphi.ai/v1/kennet
 ```
 
-Requests and responses are JSON, except the upload (multipart) and the twin's content (the file itself). The OpenAPI document is at [`https://api.metaphi.ai/v1/openapi.json`](https://api.metaphi.ai/v1/openapi.json) and needs no key.
+Twin is one tool of the Kennet API, served under that base URL. Requests and responses are JSON, except the upload (multipart) and the twin's content (the file itself). The OpenAPI document is at [`https://api.metaphi.ai/v1/kennet/openapi.json`](https://api.metaphi.ai/v1/kennet/openapi.json) and needs no key.
+
+## Versioning
+
+The API has one dated version, `2026-10-11`. Every response carries the header `Metaphi-Version: 2026-10-11`, and webhook events carry `"api_version": "2026-10-11"`.
+
+You may send `Metaphi-Version` on a request to pin the version you built against. An unknown value is refused with `400 unknown_api_version`. If you send no header, the request runs on the current version.
 
 ## Authentication
 
 Send your secret key as a bearer token on every request:
 
 ```sh
-curl https://api.metaphi.ai/v1/twins -H "Authorization: Bearer $API_KEY"
+curl https://api.metaphi.ai/v1/kennet/twins -H "Authorization: Bearer $API_KEY"
 ```
 
 | Key | Starts with | Mode |
@@ -55,16 +61,16 @@ Going over a run limit answers `429` with a `Retry-After` header. Ask your accou
 
 ```sh
 # 1. Upload a trace; answers 202 with the twin queued
-curl https://api.metaphi.ai/v1/twins \
+curl https://api.metaphi.ai/v1/kennet/twins \
   -H "Authorization: Bearer $API_KEY" \
   -H "Idempotency-Key: $(uuidgen)" \
   -F file=@trace.jsonl
 
 # 2. Poll until status is completed or failed (or take the webhook)
-curl https://api.metaphi.ai/v1/twins/twin_... -H "Authorization: Bearer $API_KEY"
+curl https://api.metaphi.ai/v1/kennet/twins/twin_... -H "Authorization: Bearer $API_KEY"
 
 # 3. Download the twin
-curl https://api.metaphi.ai/v1/twins/twin_.../content -H "Authorization: Bearer $API_KEY" -o trace.twin.jsonl
+curl https://api.metaphi.ai/v1/kennet/twins/twin_.../content -H "Authorization: Bearer $API_KEY" -o trace.twin.jsonl
 ```
 
 A trace takes a few minutes. Poll with backoff, starting at a few seconds, or register a [webhook](/api/webhooks) to be told when it ends.

@@ -9,12 +9,12 @@ Register an https URL and you receive an event each time a twin ends. Events are
 
 | Method and path | Description |
 | --- | --- |
-| `POST /v1/webhook_endpoints` | JSON `{"url": "https://..."}`. Answers `201` with the endpoint and its `secret` |
-| `GET /v1/webhook_endpoints` | Your endpoints, newest first, without their secrets |
-| `DELETE /v1/webhook_endpoints/{id}` | Stop sending to it. Its pending deliveries are dropped |
+| `POST /v1/kennet/webhook_endpoints` | JSON `{"url": "https://..."}`. Answers `201` with the endpoint and its `secret` |
+| `GET /v1/kennet/webhook_endpoints` | Your endpoints, newest first, without their secrets |
+| `DELETE /v1/kennet/webhook_endpoints/{id}` | Stop sending to it. Its pending deliveries are dropped |
 
 ```sh
-curl https://api.metaphi.ai/v1/webhook_endpoints \
+curl https://api.metaphi.ai/v1/kennet/webhook_endpoints \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.com/hooks/twins"}'
@@ -26,7 +26,7 @@ curl https://api.metaphi.ai/v1/webhook_endpoints \
   "object": "webhook_endpoint",
   "url": "https://example.com/hooks/twins",
   "created": 1760054400,
-  "enabled_events": ["twin.completed", "twin.failed"],
+  "enabled_events": ["kennet.twin.completed", "kennet.twin.failed"],
   "secret": "whsec_..."
 }
 ```
@@ -41,19 +41,20 @@ Endpoints are per organization and per mode: a test key's endpoints receive only
 
 | Type | When |
 | --- | --- |
-| `twin.completed` | The twin completed; its content is ready |
-| `twin.failed` | The twin failed; `data.error` says why |
+| `kennet.twin.completed` | The twin completed; its content is ready |
+| `kennet.twin.failed` | The twin failed; `data.error` says why |
 
 ```json
 {
   "id": "evt_4c2a...",
   "object": "event",
-  "type": "twin.completed",
+  "type": "kennet.twin.completed",
+  "api_version": "2026-10-11",
   "created": 1760054640,
   "livemode": true,
   "data": {
     "id": "twin_t-2f9c...",
-    "object": "twin",
+    "object": "kennet.twin",
     "status": "completed",
     "created": 1760054400,
     "completed": 1760054580,
