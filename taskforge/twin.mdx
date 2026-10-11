@@ -114,6 +114,52 @@ Each completed trace draws your organization's prepaid credit. A run that fails 
 - The twin stays under your account for 7 days; nobody else's account reaches it.
 - The table of what became what is neither returned nor stored.
 
+## Errors
+
+Every error carries a stable `code`. Switch on the `code`, never on the message text: messages may be reworded, but a code is never renamed or reused.
+
+A refused call comes back flagged `isError`. Its text is the message, and its structured content is the error object:
+
+```json
+{"error": {"type": "billing_error", "code": "out_of_credit",
+           "message": "This organization's prepaid balance is used up; add credits to continue. Nothing was started.",
+           "retryable": false, "request_id": "req_5f1c0a9e2b7d4c3a8e6f1b20"}}
+```
+
+A run that fails comes back through `get_task` as `{run_id, status: "failed", error}`. The `error` is the same object, with the `run_id` added.
+
+`retryable` says whether the same call, made again unchanged later, may succeed. For a run error, it means a fresh upload of the same trace may succeed. Quote the `request_id` when you contact support.
+
+| code | type | retryable | meaning |
+|---|---|---|---|
+| `out_of_credit` | `billing_error` | no | The organization's prepaid balance is used up. |
+| `no_organization` | `auth_error` | no | The sign-in is not billed to an organization; use an organization API key. |
+| `no_caller` | `auth_error` | no | The call carries no signed-in caller. |
+| `caller_not_allowed` | `auth_error` | no | This sign-in cannot own trace files. |
+| `balance_unavailable` | `api_error` | yes | The balance could not be checked; nothing was started. |
+| `rate_limited_concurrent` | `rate_limit_error` | yes | The organization has the most runs going at once. |
+| `rate_limited_daily` | `rate_limit_error` | yes | The organization has started the most runs a day takes. |
+| `invalid_key` | `invalid_request_error` | no | key is not 64 hex characters. |
+| `invalid_confidential` | `invalid_request_error` | no | confidential names too many, or too long, names. |
+| `invalid_filename` | `invalid_request_error` | no | The file name is not one the upload takes. |
+| `invalid_upload_id` | `invalid_request_error` | no | upload_id is not one upload_trace returned. |
+| `upload_not_found` | `invalid_request_error` | no | Nothing was uploaded under upload_id; run the upload command first. |
+| `upload_already_run` | `invalid_request_error` | no | The upload has had its one run; upload the trace again. |
+| `invalid_output_path` | `invalid_request_error` | no | trace_path is not an output_path a twin task returned. |
+| `output_not_found` | `invalid_request_error` | no | Nothing is at that output_path: it expired or never existed. |
+| `task_not_found` | `invalid_request_error` | no | No such task is held for the caller. |
+| `unavailable` | `api_error` | yes | The request could not be carried out; nothing was started or charged. |
+| `upload_gone` | `run_error` | yes | The upload expired before the run read it; upload it again. |
+| `not_text` | `run_error` | no | The trace is not UTF-8 text or JSON. |
+| `too_large` | `run_error` | no | The trace has more distinct text than one run reads; split it. |
+| `session_failed` | `run_error` | yes | A session did not complete; nothing was written or charged. |
+| `budget_exceeded` | `run_error` | yes | The run reached its spending limit; nothing was written or charged. |
+| `run_failed` | `run_error` | yes | The run failed after its sessions; nothing was written or charged. |
+| `twin_unclean` | `run_error` | no | The twin did not pass its check; nothing was written or charged. |
+| `run_unavailable` | `api_error` | yes | The run could not be carried out; nothing was written or charged. |
+
+The command line raises one class per `type` (`BillingError`, `RateLimitError`, and so on) and prints `error: <message> (code: <code>, request: <request_id>)`. With `--json`, it also prints the error object on stdout.
+
 ## When something goes wrong
 
 | You see | Do this |
