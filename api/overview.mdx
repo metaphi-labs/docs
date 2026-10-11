@@ -1,0 +1,70 @@
+---
+title: "Twin API"
+description: "Make synthetic twins of agent traces from your own backend, over HTTPS."
+---
+
+The Twin API turns an agent trace into a synthetic twin. Every value that identifies a person, a private organisation, an account or a secret is replaced at every place it occurs with one consistent synthetic value of the same kind. The trace's structure and format are kept.
+
+One trace file in, one twinned file out, in the same format.
+
+## Base URL
+
+```
+https://twin.metaphi.ai/v1
+```
+
+Requests and responses are JSON, except the upload (multipart) and the twin's content (the file itself). The OpenAPI document is at [`https://twin.metaphi.ai/v1/openapi.json`](https://twin.metaphi.ai/v1/openapi.json) and needs no key.
+
+## Authentication
+
+Send your secret key as a bearer token on every request:
+
+```sh
+curl https://twin.metaphi.ai/v1/twins -H "Authorization: Bearer $API_KEY"
+```
+
+| Key | Starts with | Mode |
+| --- | --- | --- |
+| Live | `mai_sk_` | Real runs, drawn from your organization's prepaid balance |
+| Test | `mai_sk_test_` | Real runs, free, with the limits below |
+
+Keep keys on your server. A key needs access to twins, or every request answers `403 insufficient_scope`. A revoked key stops working within a minute.
+
+## Test mode
+
+A test key runs the real pipeline at no charge. Test mode differs from live in four ways:
+
+- Each file is at most 256 KiB.
+- An organization starts at most 20 test runs in 24 hours.
+- Every object says `"livemode": false`.
+- Test and live are kept apart. A test key never sees live twins, webhook endpoints or idempotency keys, and a live key never sees test ones.
+
+## Limits
+
+| Limit | Default |
+| --- | --- |
+| File size | 50 MiB (256 KiB in test mode) |
+| Runs going at once, per organization | 3 |
+| Runs started in 24 hours, per organization | 200 (20 in test mode) |
+| Webhook endpoints, per organization and mode | 16 |
+| Content kept after a twin completes | 7 days |
+
+Going over a run limit answers `429` with a `Retry-After` header. Ask your account contact to raise your organization's limits.
+
+## Quickstart
+
+```sh
+# 1. Upload a trace; answers 202 with the twin queued
+curl https://twin.metaphi.ai/v1/twins \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -F file=@trace.jsonl
+
+# 2. Poll until status is completed or failed (or take the webhook)
+curl https://twin.metaphi.ai/v1/twins/twin_... -H "Authorization: Bearer $API_KEY"
+
+# 3. Download the twin
+curl https://twin.metaphi.ai/v1/twins/twin_.../content -H "Authorization: Bearer $API_KEY" -o trace.twin.jsonl
+```
+
+A trace takes a few minutes. Poll with backoff, starting at a few seconds, or register a [webhook](/api/webhooks) to be told when it ends.
