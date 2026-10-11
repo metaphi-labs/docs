@@ -14,7 +14,7 @@ Register an https URL and you receive an event each time a twin ends. Events are
 | `DELETE /v1/webhook_endpoints/{id}` | Stop sending to it. Its pending deliveries are dropped |
 
 ```sh
-curl https://twin.metaphi.ai/v1/webhook_endpoints \
+curl https://api.metaphi.ai/v1/webhook_endpoints \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.com/hooks/twins"}'

@@ -44,7 +44,7 @@ For a failed twin, `retryable` says whether uploading the same trace again may s
 Send an [`Idempotency-Key`](/api/idempotency) header so a retried request never starts a second run.
 
 ```sh
-curl https://twin.metaphi.ai/v1/twins \
+curl https://api.metaphi.ai/v1/twins \
   -H "Authorization: Bearer $API_KEY" \
   -H "Idempotency-Key: 5d3e1c1a-..." \
   -F file=@trace.jsonl \
