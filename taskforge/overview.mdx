@@ -32,7 +32,7 @@ flowchart TB
 | Step | What it proves | Tools |
 | --- | --- | --- |
 | Authoring | A candidate is worth building, and the bundle exists | `run_repo_to_tasks`, `run_task_proposals`, `score_candidate`, `generate_harbor_task` |
-| Pre-run (Check) | The grader rewards the reference, rejects the untouched code and cannot be gamed | `run_task_ci_checks`, `prerun_validate`, `run_harbor_tasks` mode `validate` |
+| Pre-run (Check) | The grader rewards the reference, rejects the untouched code and cannot be gamed | `run_task_ci_checks`, `prerun_validate`, `run_harbor_tasks` mode `validate`, `run_redteam` |
 | Conduct | How real agents do on it, at what cost | `run_harbor_tasks`, `calibrate_task` |
 | Post-run (Check) | Each reward was earned, and the task is as hard as you meant | `harbor_rollouts`, `harbor_run_report`, `review_run`, `submit_adjudication` |
 | Consult | What only a person knows: a business rule, an intent, a judgment call | `answer_task`, `ask_human` |
