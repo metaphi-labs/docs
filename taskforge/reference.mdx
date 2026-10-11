@@ -14,7 +14,7 @@ Hum grants each person one tier. Tiers add up: `l2` reaches everything `l1` does
 | `kennet:l1` | Task authors | Check and run bundles, read runs, adjudicate, follow your tasks. Runs only the models the gateway's `l1` list holds |
 | `kennet:l2` | Trusted authors | Any catalog model, the authoring tools, `review_run`. `run_repo_to_tasks` at most $100 a session |
 | `kennet:l3` | The Metaphi team | Calibration, consults, parked passes, traces. `run_repo_to_tasks` at most $500 a session |
-| `kennet:anonymize` | A capability, not a tier | `upload_trace`, `anonymize_trace`, `pull_trace` and your own jobs |
+| `kennet:twin` | A capability, not a tier | `upload_trace`, `twin_trace`, `pull_trace`, and `get_task` and `cancel_task` on your own jobs: five tools |
 
 A tool above your tier is not listed. Beyond the tier, GitHub decides at the call: a tool that launches or writes needs push to the repository, a read needs read.
 
@@ -68,13 +68,13 @@ A tool above your tier is not listed. Beyond the tier, GitHub decides at the cal
 | `list_parked` | List parked passes | List your agent passes waiting to resume. | `l3` |
 | `resume_parked` | Resume parked passes | Ask the model API for one token and, when it answers, respawn every pass of yours that waits, oldest first, each continuing its own conversation. | `l3` |
 
-## Anonymize
+## Twin
 
 | Tool | Title | What it does | Tier |
 | --- | --- | --- | --- |
-| `upload_trace` | Upload a trace | Get a curl command that uploads one agent trace from your working directory. | `l3` |
-| `anonymize_trace` | Anonymize a trace | Anonymize an uploaded trace. | `l3` |
-| `pull_trace` | Pull a trace | Get a curl command that downloads an anonymized trace, or its report, into your working directory. | `l3` |
+| `upload_trace` | Upload a trace | Get a curl command that uploads one agent trace from your working directory. | `l3`, `twin` |
+| `twin_trace` | Twin a trace | Make a synthetic twin of an uploaded trace. | `l3`, `twin` |
+| `pull_trace` | Pull a trace | Get a curl command that downloads a twinned trace into your working directory. | `l3`, `twin` |
 
 ## Jobs
 

@@ -1,0 +1,125 @@
+---
+title: "Twin traces"
+description: "Turn an agent trace into a synthetic twin: every person, private organisation, account and secret replaced with a consistent synthetic value, the structure and format kept."
+---
+
+Kennet makes a synthetic twin of an agent trace for you to keep, share or train on. Each real value is replaced at every place it occurs with one consistent synthetic value of the same kind, so the twin still parses, references still resolve, and a name that appears forty times is the same new name forty times.
+
+One trace file in, one twinned file out, in the same format. Nothing else comes back: no table of what became what, no report.
+
+Run it from the `metaphi` command line, or from your own agent (Claude Code, Codex, Cursor, Hum, or any MCP client).
+
+## From the command line
+
+Install the CLI and make an organization key once:
+
+```sh
+brew install metaphi-labs/tap/metaphi
+metaphi login
+metaphi keys create prod --save
+```
+
+Then twin a trace:
+
+```sh
+metaphi twin trace.json        # writes trace.twin.json
+```
+
+The twin is written to `<name>.twin<ext>` beside the input, or where `-o` says. From a server, set `METAPHI_API_KEY` to an organization key and add `--json` to print `{"output"}` on stdout.
+
+| Flag | What it does |
+| --- | --- |
+| `-o, --output` | Where the twin goes. Default: `<name>.twin<ext>` |
+| `--key <64 hex>` | Keys the synthetic values. The same key gives one person the same synthetic value in every trace of a corpus. Default: a fresh key per trace |
+| `--confidential <org>` | Treat an organisation as confidential although public, such as your client; it is replaced with everything that names it. Repeatable |
+
+## From your agent
+
+### 1. Connect
+
+Add the server to your agent. In Claude Code:
+
+```
+claude mcp add --transport http kennet https://kennet.metaphi.ai/mcp/
+```
+
+Any MCP client takes the same URL: `https://kennet.metaphi.ai/mcp/`.
+
+### 2. Sign in
+
+Authenticate the server from your agent (in Claude Code: `/mcp`, choose `kennet`, then Authenticate). Your browser opens on `app.metaphi.ai`. Sign in with Google or GitHub.
+
+The first time, your account has no access yet: choose **Request access**. You get an email when it is approved; then authenticate again and choose **Allow**. Access is the `kennet:twin` scope.
+
+Your agent now lists five tools: `upload_trace`, `twin_trace`, `pull_trace`, `get_task` and `cancel_task`.
+
+### 3. Twin a trace
+
+Ask your agent in plain words, from the directory that holds the file:
+
+```
+Twin trace.json with kennet and save the result here.
+```
+
+It makes three calls. They are shown so you know what happens.
+
+```json
+upload_trace {"filename": "trace.json"}
+```
+
+Returns a `curl` command and an `upload_id`. Your agent runs the command in your shell, which uploads the file. The URL answers for 10 minutes. A trace is JSON, JSON Lines or text.
+
+```json
+twin_trace {"upload_id": "<upload id>"}
+```
+
+Returns a task. Poll `get_task` until it ends; a trace takes a few minutes. The result carries `output_path`, or the reason the run failed.
+
+```json
+pull_trace {"trace_path": "<output_path>"}
+```
+
+Returns a `curl` command that downloads the twin into your working directory.
+
+`twin_trace` takes the same options as the command line: `key` (64 hex characters) and `confidential` (a list of organisations).
+
+```json
+twin_trace {"upload_id": "<upload id>", "key": "<64 hex characters>",
+            "confidential": ["Acme Holdings"]}
+```
+
+An upload takes one run. To run a trace again, upload it again.
+
+## What is replaced
+
+| Kind | What happens |
+| --- | --- |
+| People | Always replaced: names, emails, phone numbers, addresses, handles |
+| Private organisations | Replaced, with everything that names them |
+| Accounts and identifiers | Replaced with a value of the same shape |
+| Secrets | Replaced: keys, tokens, passwords |
+| Listed public companies | Kept, with their brands, subsidiaries and tickers, unless you name them confidential |
+
+After the replacement a second reader, shown only the twin, looks for anything still real, and one repair round follows.
+
+Keep the key if you will twin more traces of the same corpus later. Kennet does not keep it.
+
+## Credits
+
+Each completed trace draws your organization's prepaid credit. A run that fails costs nothing. When the balance reaches zero, new runs are refused until credit is added (`metaphi credits`).
+
+## What Kennet keeps
+
+- Your upload is deleted when its run ends, whether it completed or failed. An upload never run is deleted after a day.
+- The twin stays under your account for 7 days; nobody else's account reaches it.
+- The table of what became what is neither returned nor stored.
+
+## When something goes wrong
+
+| You see | Do this |
+| --- | --- |
+| "does not have access" on the sign-in page | Choose **Request access** and wait for the email |
+| The sign-in is not billed to an organization | Runs are billed to an organization: have its owner add you (`metaphi members add`), or run `metaphi twin` with the organization's key |
+| The prepaid balance is used up | Add credit, then run again |
+| The upload URL has expired | Call `upload_trace` again; a URL answers for 10 minutes |
+| The task ends `failed` | Read the reason in the result, then upload the trace again and rerun it |
