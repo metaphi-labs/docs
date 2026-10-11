@@ -64,6 +64,7 @@ Every response, success or error, carries a `Request-Id` header with the same id
 | `body_invalid` | 400 | no | The request body could not be read |
 | `file_empty` | 400 | no | The uploaded file is empty |
 | `file_too_large` | 413 | no | The file is larger than a twin takes: 50 MiB, or 256 KiB in test mode |
+| `body_too_large` | 413 | no | A request body other than a twin's upload is larger than 64 KiB |
 | `idempotency_key_invalid` | 400 | no | The Idempotency-Key header is empty, too long or not printable ASCII |
 | `idempotency_key_reused` | 409 | no | The Idempotency-Key was used with a different request in the last 24 hours |
 | `idempotency_key_in_use` | 409 | yes | A request with the same Idempotency-Key is still being handled |
