@@ -7,31 +7,37 @@ Kennet makes a synthetic twin of an agent trace for you to keep, share or train 
 
 One trace file in, one twinned file out, in the same format. Nothing else comes back: no table of what became what, no report.
 
-Run it from the `metaphi` command line, or from your own agent (Claude Code, Codex, Cursor, Hum, or any MCP client).
+Run it from the `kennet` command line, or from your own agent (Claude Code, Codex, Cursor, Hum, or any MCP client).
 
 ## From the command line
 
-Install the CLI and make an organization key once:
+Install the CLI and sign in once:
 
 ```sh
-brew install metaphi-labs/tap/metaphi
-metaphi login
-metaphi keys create prod --save
+brew install metaphi-labs/tap/kennet
+kennet login
 ```
+
+`kennet login` opens the browser, then saves your organization's live key and test key on this machine.
 
 Then twin a trace:
 
 ```sh
-metaphi twin trace.json        # writes trace.twin.json
+kennet twin trace.json        # writes trace.twin.json
 ```
 
-The twin is written to `<name>.twin<ext>` beside the input, or where `-o` says. From a server, set `METAPHI_API_KEY` to an organization key and add `--json` to print `{"output"}` on stdout.
+The twin is written to `<name>.twin<ext>` beside the input, or where `-o` says. From a server, set `METAPHI_API_KEY` to an organization key and add `--json` to print `{"output"}` on stdout. An owner makes a server its own key in the console at `app.metaphi.ai/console`.
 
 | Flag | What it does |
 | --- | --- |
 | `-o, --output` | Where the twin goes. Default: `<name>.twin<ext>` |
-| `--key <64 hex>` | Keys the synthetic values. The same key gives one person the same synthetic value in every trace of a corpus. Default: a fresh key per trace |
+| `--out <dir>` | The directory the twin goes in, as `<name>.twin<ext>` |
+| `--key-file <path>` | A file holding the key (64 hex characters) that keys the synthetic values. The same key gives one person the same synthetic value in every trace of a corpus. Default: a fresh key per trace |
+| `--key <64 hex>` | The key itself. It shows in the process list, so prefer `--key-file` |
 | `--confidential <org>` | Treat an organisation as confidential although public, such as your client; it is replaced with everything that names it. Repeatable |
+| `--test` | Run on the test key: free, at most 2 MiB, one run per organization |
+| `--no-wait` | Start the twin and return its id; `kennet twins wait <id>` comes back for it |
+| `--json` | Print the result, or the error object, alone on stdout |
 
 ## From your agent
 
@@ -106,7 +112,7 @@ Keep the key if you will twin more traces of the same corpus later. Kennet does 
 
 ## Credits
 
-Each completed trace draws your organization's prepaid credit. A run that fails costs nothing. When the balance reaches zero, new runs are refused until credit is added (`metaphi credits`).
+Each completed trace draws your organization's prepaid credit. A run that fails costs nothing. When the balance reaches zero, new runs are refused until credit is added (`kennet credits buy`).
 
 ## What Kennet keeps
 
@@ -139,6 +145,7 @@ A run that fails comes back through `get_task` as `{run_id, status: "failed", er
 | `balance_unavailable` | `api_error` | yes | The balance could not be checked; nothing was started. |
 | `rate_limited_concurrent` | `rate_limit_error` | yes | The organization has the most runs going at once. |
 | `rate_limited_daily` | `rate_limit_error` | yes | The organization has started the most runs a day takes. |
+| `test_runs_used` | `rate_limit_error` | no | The organization has used its free test runs. |
 | `invalid_key` | `invalid_request_error` | no | key is not 64 hex characters. |
 | `invalid_confidential` | `invalid_request_error` | no | confidential names too many, or too long, names. |
 | `invalid_filename` | `invalid_request_error` | no | The file name is not one the upload takes. |
@@ -165,7 +172,7 @@ The command line raises one class per `type` (`BillingError`, `RateLimitError`, 
 | You see | Do this |
 | --- | --- |
 | "does not have access" on the sign-in page | Choose **Request access** and wait for the email |
-| The sign-in is not billed to an organization | Runs are billed to an organization: have its owner add you (`metaphi members add`), or run `metaphi twin` with the organization's key |
+| The sign-in is not billed to an organization | Runs are billed to an organization: have its owner add you in the console at `app.metaphi.ai/console`, or run `kennet twin` with the organization's key |
 | The prepaid balance is used up | Add credit, then run again |
 | The upload URL has expired | Call `upload_trace` again; a URL answers for 10 minutes |
 | The task ends `failed` | Read the reason in the result, then upload the trace again and rerun it |
