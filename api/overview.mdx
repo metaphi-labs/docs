@@ -40,8 +40,8 @@ Keep keys on your server. A key needs access to twins, or every request answers 
 
 A test key runs the real pipeline at no charge. Test mode differs from live in four ways:
 
-- Each file is at most 256 KiB.
-- An organization starts at most 20 test runs in 24 hours.
+- Each file is at most 2 MiB.
+- An organization starts one test run in all. Past it, a create answers `429 test_runs_used`.
 - Every object says `"livemode": false`.
 - Test and live are kept apart. A test key never sees live twins, webhook endpoints or idempotency keys, and a live key never sees test ones.
 
@@ -49,9 +49,9 @@ A test key runs the real pipeline at no charge. Test mode differs from live in f
 
 | Limit | Default |
 | --- | --- |
-| File size | 50 MiB (256 KiB in test mode) |
+| File size | 50 MiB (2 MiB in test mode) |
 | Runs going at once, per organization | 3 |
-| Runs started in 24 hours, per organization | 200 (20 in test mode) |
+| Runs started in 24 hours, per organization | 200 (test mode: one run in all) |
 | Webhook endpoints, per organization and mode | 16 |
 | Content kept after a twin completes | 7 days |
 

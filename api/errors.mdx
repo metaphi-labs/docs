@@ -56,6 +56,7 @@ Every response, success or error, carries a `Request-Id` header with the same id
 | `balance_unavailable` | 503 | yes | The balance could not be checked; nothing was started |
 | `rate_limited_concurrent` | 429 | yes | The organization has the most runs going at once (`Retry-After: 60`) |
 | `rate_limited_daily` | 429 | yes | The organization has started the most runs a day takes (`Retry-After: 3600`) |
+| `test_runs_used` | 429 | no | The organization has used its free test run; use a live key |
 | `invalid_filename` | 400 | no | The file name is not one the upload takes |
 | `invalid_key` | 400 | no | `key` is not 64 hex characters |
 | `invalid_confidential` | 400 | no | `confidential` names too many names, or names that are too long |
