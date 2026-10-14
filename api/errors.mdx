@@ -38,7 +38,7 @@ Every response, success or error, carries a `Request-Id` header with the same id
 | 404 | `invalid_request_error` | No such object for this key, or no such route |
 | 405 | `invalid_request_error` | The route does not take that method |
 | 409 | `idempotency_error`, `invalid_request_error` | An idempotency key conflict, or a twin with no content yet |
-| 410 | `invalid_request_error` | The twin's content is past its 7 days |
+| 410 | `invalid_request_error` | The twin's content is past its 7-day download window |
 | 413 | `invalid_request_error` | The file is too large |
 | 429 | `rate_limit_error` | A run limit. Wait for the `Retry-After` seconds |
 | 500 | `api_error` | An unexpected failure; nothing was started or charged |

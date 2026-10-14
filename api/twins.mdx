@@ -25,7 +25,7 @@ description: "The twin object, and creating, retrieving, listing and downloading
 | `status` | string | `queued`, `running`, `completed` or `failed` |
 | `created` | integer | Unix seconds |
 | `completed` | integer or null | Unix seconds when it ended, whether it completed or failed |
-| `filename` | string or null | The uploaded file's name; `null` once the content has expired |
+| `filename` | string or null | The uploaded file's name; `null` once the download window has ended |
 | `error` | object or null | Why it failed: `{type, code, message, retryable}`. See [run failures](/api/errors#run-failures) |
 | `livemode` | boolean | `false` for a test-mode twin |
 
@@ -90,10 +90,10 @@ The `Content-Type` follows the uploaded file's extension:
 | 200 | | The file |
 | 409 | `twin_not_completed` | Still `queued` or `running`; retry later |
 | 409 | `twin_failed` | The twin failed and has no content |
-| 410 | `content_expired` | More than 7 days since it completed; the content is deleted |
+| 410 | `content_expired` | More than 7 days since it completed; past its download window |
 
 ## What is kept
 
-- The twin's content can be downloaded for 7 days after it completes, and only your organization's keys reach it in the mode that made it. The uploaded file's name is dropped with it.
+- The twin's content can be downloaded for 7 days after it completes, and only your organization's keys reach it in the mode that made it. The uploaded file's name is dropped when that window ends.
 - The table of what became what is neither returned nor stored.
 - Data retention is set per organization under your agreement with Metaphi.
