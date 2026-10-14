@@ -30,7 +30,7 @@ Three stages, cheapest first:
 | `oracle` | The reference solution scores 1.0 |
 | `null_arm` | The untouched codebase scores below 1.0 |
 | `probe_cheat` | A non-solving `solve.sh` scores below 1.0 |
-| `solutions` | Every wrong solution under `tests/wrong/` scores below 1.0 and every right solution under `tests/right/` scores 1.0. One sandbox per solution |
+| `solutions` | Every wrong solution in `wrong/` scores below 1.0 and every right solution in `right/` scores 1.0, both at the task's root. One sandbox per solution |
 | `cases` | Where the verifier reports per case: no case passes on the untouched code and fails with the reference applied |
 
 What the newer checks ask:
@@ -54,16 +54,20 @@ A reward is sound when every right solution scores 1.0 and every wrong one score
 
 ### Wrong and right solutions
 
-They live in the bundle, under `tests/`:
+They live at the task's root, the directory holding `task.toml`, beside `tests/` and never under it:
 
 ```
-tests/
-├── test.sh
+<task>/
+├── task.toml
+├── instruction.md
+├── environment/
+├── solution/
+├── tests/
 ├── wrong/<name>.patch     or  wrong/<name>/…    must score below 1.0
 └── right/<name>.patch     or  right/<name>/…    must score 1.0
 ```
 
-Harbor never shows `tests/` to the agent: it copies the directory to `/tests` for the verifier once the agent has stopped, or builds a separate verifier container from it. `solution/` reaches only the oracle agent.
+`wrong/` and `right/` are yours alone: they are not part of the Harbor task, so Harbor's packager never publishes them, and a bundle delivered to a customer never carries them. `tests/` ships: Harbor copies it to `/tests` for the verifier once the agent has stopped, and it travels in every delivered bundle. A bundle carrying `tests/wrong/` or `tests/right/` fails `bundle_shape`, and its solutions are not run; move them with `git mv tests/wrong wrong`. `solution/` reaches only the oracle agent.
 
 Two formats, the same for both kinds:
 
@@ -72,7 +76,7 @@ Two formats, the same for both kinds:
 | Patch | A `.patch` or `.diff` file | `git apply` in the image's working directory (the image needs `git`) |
 | Overlay | A directory | Its files are copied over the working directory at their relative paths. A `solve.sh` at its top is ignored |
 
-The working directory is the one Harbor runs the reference in: `[environment] workdir`, else the Dockerfile's `WORKDIR`. A task whose agent writes an answer rather than changing code uses an overlay holding that answer, for example `tests/wrong/sign-flipped/answer.json` where the working directory is `/workspace` and the verifier reads `/workspace/answer.json`.
+The working directory is the one Harbor runs the reference in: `[environment] workdir`, else the Dockerfile's `WORKDIR`. A task whose agent writes an answer rather than changing code uses an overlay holding that answer, for example `wrong/sign-flipped/answer.json` where the working directory is `/workspace` and the verifier reads `/workspace/answer.json`.
 
 Each solution replaces the reference in a copy of the bundle and runs through Harbor's oracle agent and the bundle's own verifier, in a sandbox of its own. A wrong solution passes when a case rejects it (with no per-case report, when the reward is below 1.0). A right solution passes at 1.0.
 
@@ -107,7 +111,7 @@ run_harbor_tasks {"repo": "acme/tasks", "ref": "main", "paths": ["tasks/fix-roun
 | `oracle` | `solve.sh` scores 1.0 |
 | `null_arm` | No agent action scores below 1.0. A bundle graded under `gated-binary/1` must score exactly 0.0, with at least one fail-to-pass case, none of them passing, and every pass-to-pass case passing |
 | `probe_cheat` | The oracle with a non-solving `solve.sh` scores below 1.0 |
-| one per solution, named by its path (`tests/wrong/x.patch`) | A wrong solution scores below 1.0; a right solution scores 1.0. `solutions` is skipped, by name, when the bundle offers no wrong one |
+| one per solution, named by its path (`wrong/x.patch`) | A wrong solution scores below 1.0; a right solution scores 1.0. `solutions` is skipped, by name, when the bundle offers no wrong one |
 
 Mode `full` adds one `conduct` rollout with the first model. It lands at `<task>/validate/<run id>/`.
 
