@@ -38,7 +38,7 @@ Every response, success or error, carries a `Request-Id` header with the same id
 | 404 | `invalid_request_error` | No such object for this key, or no such route |
 | 405 | `invalid_request_error` | The route does not take that method |
 | 409 | `idempotency_error`, `invalid_request_error` | An idempotency key conflict, or a twin with no content yet |
-| 410 | `invalid_request_error` | The twin's content is past its 7 days |
+| 410 | `invalid_request_error` | The twin's content is past its 7-day download window |
 | 413 | `invalid_request_error` | The file is too large |
 | 429 | `rate_limit_error` | A run limit. Wait for the `Retry-After` seconds |
 | 500 | `api_error` | An unexpected failure; nothing was started or charged |
@@ -73,7 +73,7 @@ Every response, success or error, carries a `Request-Id` header with the same id
 | `method_not_allowed` | 405 | no | The route does not take that method |
 | `twin_not_completed` | 409 | yes | The twin is queued or running; its content is not ready |
 | `twin_failed` | 409 | no | The twin failed and has no content |
-| `content_expired` | 410 | no | The twin's content is past its 7-day retention |
+| `content_expired` | 410 | no | The twin's content is past its 7-day download window |
 | `webhook_url_invalid` | 400 | no | The webhook URL is not https, or not on a public host |
 | `webhook_endpoint_limit` | 400 | no | The organization already has as many webhook endpoints as it may |
 | `webhooks_unavailable` | 503 | yes | Webhooks are not available just now |
