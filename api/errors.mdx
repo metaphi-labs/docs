@@ -73,7 +73,7 @@ Every response, success or error, carries a `Request-Id` header with the same id
 | `method_not_allowed` | 405 | no | The route does not take that method |
 | `twin_not_completed` | 409 | yes | The twin is queued or running; its content is not ready |
 | `twin_failed` | 409 | no | The twin failed and has no content |
-| `content_expired` | 410 | no | The twin's content is past its 7-day retention |
+| `content_expired` | 410 | no | The twin's content is past its 7-day download window |
 | `webhook_url_invalid` | 400 | no | The webhook URL is not https, or not on a public host |
 | `webhook_endpoint_limit` | 400 | no | The organization already has as many webhook endpoints as it may |
 | `webhooks_unavailable` | 503 | yes | Webhooks are not available just now |
