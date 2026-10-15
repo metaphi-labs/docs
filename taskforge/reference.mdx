@@ -11,7 +11,7 @@ Hum grants each person one tier. Tiers add up: `l2` reaches everything `l1` does
 
 | Tier | Who | Adds |
 | --- | --- | --- |
-| `kennet:l1` | Task authors | Check and run bundles, read runs, adjudicate, follow your tasks. Runs only the models the gateway's `l1` list holds |
+| `kennet:l1` | Task authors | Check and run bundles, read runs, adjudicate, follow your tasks. Runs only the models listed for `l1` |
 | `kennet:l2` | Trusted authors | Any catalog model, the authoring tools, `review_run`. `run_repo_to_tasks` at most $100 a session |
 | `kennet:l3` | The Metaphi team | Calibration, consults, parked passes, traces. `run_repo_to_tasks` at most $500 a session |
 | `kennet:twin` | A capability, not a tier | `upload_trace`, `twin_trace`, `pull_trace`, and `get_task` and `cancel_task` on your own jobs: five tools |
@@ -23,11 +23,10 @@ A tool above your tier is not listed. Beyond the tier, GitHub decides at the cal
 | Tool | Title | What it does | Tier |
 | --- | --- | --- | --- |
 | `run_repo_to_tasks` | Forge tasks from a repo | Run taskforge's whole loop over a repository. | `l2` |
-| `run_task_proposals` | Mine task ideas | Mine a repository for task candidates (taskforge's task_proposals). | `l2` |
-| `score_candidate` | Score a task idea | Score one task candidate against the calibration rubric and return its three measurements. | `l2` |
-| `generate_harbor_task` | Write a Harbor task | Generate an eval-ready Harbor task bundle (taskforge's sme_to_harbor session). | `l2` |
-| `run_sandbox_session` | Run a sandbox session | Run an open-ended sandbox session (taskforge's run_sandbox_session) on the environment the repository declares. | `l2` |
-| `run_skill_eval` | Evaluate a forge skill | Evaluate one of taskforge's skills. | `l3` |
+| `run_task_proposals` | Mine task ideas | Mine a repository for task candidates. | `l2` |
+| `score_candidate` | Score a task idea | Score one task candidate and return its three measurements. | `l2` |
+| `generate_harbor_task` | Write a Harbor task | Generate an eval-ready Harbor task bundle. | `l2` |
+| `run_sandbox_session` | Run a sandbox session | Run an open-ended sandbox session on the environment the repository declares. | `l2` |
 
 ## Pre-run
 
@@ -41,13 +40,13 @@ A tool above your tier is not listed. Beyond the tier, GitHub decides at the cal
 | Tool | Title | What it does | Tier |
 | --- | --- | --- | --- |
 | `run_harbor_tasks` | Run bundles on models | Run each named bundle and return one task covering every run. | `l1` |
-| `calibrate_task` | Calibrate one task | Run taskforge's calibrate session over one task and return a task. | `l3` |
+| `calibrate_task` | Calibrate one task | Calibrate one task and return a task. | `l3` |
 
 ## Post-run
 
 | Tool | Title | What it does | Tier |
 | --- | --- | --- | --- |
-| `postrun_validate` | Validate on a model | Run one submitted bundle k times on one model, judge each trial, and return a task whose result holds pass_at_k, the trials solved and the task-goodness flags the trajectory judge raised (reward hacking, instructions sufficient). | `l1` |
+| `postrun_validate` | Validate on a model | Run one submitted bundle k times on one model, judge each trial, and return a task whose result holds pass_at_k, the trials solved and the task flags its review raised (reward hacking, instructions sufficient). | `l1` |
 | `review_run` | Review a run | Review a run's trajectories. | `l2` |
 | `review_session` | Review a trajectory | Review an uploaded ATIF trajectory as a session. | `l3` |
 | `get_report` | Read a review report | Read a trajectory report whole. | `l1` |
@@ -56,7 +55,7 @@ A tool above your tier is not listed. Beyond the tier, GitHub decides at the cal
 | `resolve_suggestion` | Resolve a suggestion | Resolve an adjudication's suggestion under your name. | `l1` |
 | `harbor_runs` | List a repo's runs | List a repository's runs newest first. | `l1` |
 | `harbor_run_report` | Report one run | Report one run. | `l1` |
-| `harbor_rollouts` | Rollouts and costs | Return one row per rollout across a repository's eval runs (ids, model, harness, reward and the grade beside it, failure type, gateway API cost, tokens, phase times, model wait against tool time, sandbox CPU and peak memory) and their folds. | `l1` |
+| `harbor_rollouts` | Rollouts and costs | Return one row per rollout across a repository's eval runs (ids, model, harness, reward and the grade beside it, failure type, cost, tokens, phase times, model wait against tool time, sandbox CPU and peak memory) and their folds. | `l1` |
 | `pull_run` | Pull a run locally | Pull a run, or one file or directory in it, into your working directory. | `l1` |
 
 ## Consult
@@ -66,7 +65,7 @@ A tool above your tier is not listed. Beyond the tier, GitHub decides at the cal
 | `ask_human` | Ask experts on Slack | Open one question to a Slack channel of domain experts and return its id at once. With `questions: "open"`, ask a task's unanswered yes/no questions, attaching its bundle. | `l3` |
 | `list_consults` | List your consults | List every consult you opened with its standing, or read one whole by `consult_id`. | `l3` |
 | `list_parked` | List parked passes | List your agent passes waiting to resume. | `l3` |
-| `resume_parked` | Resume parked passes | Ask the model API for one token and, when it answers, respawn every pass of yours that waits, oldest first, each continuing its own conversation. | `l3` |
+| `resume_parked` | Resume parked passes | Resume every parked pass of yours, oldest first, once the model API answers. | `l3` |
 
 ## Twin
 

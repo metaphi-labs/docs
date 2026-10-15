@@ -68,9 +68,8 @@ Or in a plugin's `.lsp.json`, with the server's own options:
 
 - A server starts on the first question about one of its files, in the working directory, and stops with the session.
 - It runs with the reach of its own process. The sandbox does not extend to it.
-- Every call is on the session transcript. `meta.lsp` lists the servers, the plugin each came from, and the files they served.
 - A server that is missing, dies or does not answer says so on the tool result. The session goes on.
-- Sub-agents and unattended Harbor runs do not get these tools.
+- Sub-agents do not get these tools.
 
 ```
 /tools            # the servers beside the tool servers

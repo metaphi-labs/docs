@@ -13,7 +13,6 @@ hum resume --last     # newest
 
 Close the terminal or press `ctrl+c` twice. The session keeps working. An idle session with nobody attached closes after an hour; `hum resume` still reaches it.
 
-Every record on the transcript is on disk before the session goes on. A machine that goes down mid-record leaves a torn last line: `hum resume` drops it, keeps everything before it, and writes the dropped bytes on the transcript.
 
 ## Several at once
 
@@ -65,7 +64,7 @@ Delivery is yours. The session commits on its branch; you merge. `hum worktrees 
 hum send <name> "the copybook is on branch auth/ddl"
 ```
 
-The message lands where yours does: the model reads it at its next step, or it starts an exchange. Both transcripts carry it, joined by one id, and the sender is named as a session.
+The message lands where yours does: the model reads it at its next step, or it starts an exchange. Both transcripts carry it, with the sender named as a session.
 
 A message from a session settles nothing: it approves nothing, answers no question and changes no setting. A session that is not running is told about, never queued for.
 
@@ -88,13 +87,13 @@ Hum compacts at four fifths of the model's window or 200,000 tokens, whichever c
 /compact <what to keep>
 ```
 
-## What goes home
+## What uploads
 
 ```
 hum sync              # send whatever has not reached the server yet
 ```
 
-The session transcript and the working tree's history upload together, on every turn. Each state the workspace passes through is one commit, and only the part the server has not taken yet goes up, so a session that never reaches its end still has every state up to its last turn. Anything that fails to go is written on the transcript with its reason and said once on screen; `hum sync` sends what is still missing.
+The session transcript and the working tree's history upload together, on every turn. Anything that fails to go is written on the transcript with its reason and said once on screen; `hum sync` sends what is still missing.
 
 Credential files never upload: `.env`, `.envrc`, `credentials.json`, `.netrc`, `.npmrc`, `.pypirc`, keys, certificates, `.tfstate`, `.aws`, `.ssh`, `.gnupg`. Paths your project ignores are dropped from the history as soon as the ignore rule appears.
 

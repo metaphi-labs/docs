@@ -68,8 +68,7 @@
               "sub-agents",
               "skills",
               "hooks",
-              "unattended",
-              "personas"
+              "unattended"
             ]
           },
           {
@@ -90,7 +89,6 @@
             "group": "Getting started",
             "pages": [
               "taskforge/overview",
-              "taskforge/architecture",
               "taskforge/quickstart"
             ]
           },
@@ -102,12 +100,6 @@
               "taskforge/conduct",
               "taskforge/post-run",
               "taskforge/consult"
-            ]
-          },
-          {
-            "group": "Traces",
-            "pages": [
-              "taskforge/twin"
             ]
           },
           {
@@ -169,8 +161,20 @@
       "destination": "/overview"
     },
     {
+      "source": "/taskforge/twin",
+      "destination": "/api/overview"
+    },
+    {
       "source": "/taskforge/anonymize",
-      "destination": "/taskforge/twin"
+      "destination": "/api/overview"
+    },
+    {
+      "source": "/personas",
+      "destination": "/overview"
+    },
+    {
+      "source": "/taskforge/architecture",
+      "destination": "/taskforge/overview"
     }
   ],
   "seo": {

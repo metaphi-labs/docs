@@ -7,7 +7,7 @@ You choose what to build from: a repository's history, a directory of source mat
 
 ## The forge: `run_repo_to_tasks`
 
-Runs the whole loop over a repository: find candidates, queue them, author each as a bundle, verify it (pre-run checks, oracle, nop and probe, pass@1 on `target_model`, trajectory review), revise, and debrief. A task is kept when its pass@1 is below the threshold.
+Runs the whole loop over a repository: it finds candidates, authors each as a bundle, checks and runs it, and keeps a task when its pass@1 on `target_model` is below `pass_at_1_threshold`.
 
 ```json
 run_repo_to_tasks {"repo": "acme/service", "ref": "main",
@@ -28,11 +28,11 @@ run_repo_to_tasks {"repo": "acme/service", "ref": "main",
 | `seed` | A `run_task_proposals` run id; its candidates seed the queue |
 | `resume` | A session id to continue |
 
-Kept bundles stand at `<task>/harbor/` with their checks and runs beside them. The session's worklog, queue and memory land at `agent-sessions/<session id>/`. While it runs it may ask you a question; see [Consult](/taskforge/consult). A session caps at $100 on `kennet:l2` and $500 on `kennet:l3`.
+Kept bundles stand at `<task>/harbor/` with their checks and runs beside them. While it runs it may ask you a question; see [Consult](/taskforge/consult). A session caps at $100 on `kennet:l2` and $500 on `kennet:l3`.
 
 ## Mining: `run_task_proposals`
 
-Mines a repository for candidates: its commits, and its merged pull requests with the issues they close. Deduplicated, ranked and scored. A candidate is an idea with its base and final commits, not a bundle.
+Mines a repository for candidates: its commits, and its merged pull requests with the issues they close. A candidate is an idea with its base and final commits, not a bundle.
 
 ```json
 run_task_proposals {"repo": "acme/service", "ref": "main", "miners": ["prs"], "max_candidates": 20}
@@ -63,4 +63,3 @@ The result carries `bundle_path`, the conversion report, the branch it landed on
 ## Also
 
 - `run_sandbox_session`: an open-ended session on the environment the repository declares, toward a goal you write (a toolchain spike, fixtures). It writes `SANDBOX_REPORT.md` and lands at `sandbox/<run id>/`.
-- `run_skill_eval`: evaluates one of Taskforge's own skills against a fixed case. For the team that maintains the skills.

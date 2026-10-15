@@ -23,7 +23,6 @@ Hum reads only the channels it is invited to, and in them only the threads it sp
 
 A channel works on one repository. From the page Slack returned you to, or from the link Hum answers a first mention with, open **Connect a repository**: pick the channel, paste the repository URL, and connect. For a private repository there is one step more, on GitHub: an owner of the organisation installs the Hum GitHub App on it, one click on the link the page shows. Sessions then clone, commit and open pull requests as Hum.
 
-An admin of the deployment can bind a channel too (`PUT /admin/comms/repos`), and an admin's binding stands over a link's.
 
 ## The first task
 
@@ -40,7 +39,7 @@ Hum answers in a thread under your message: a line saying the session started, t
 - A thread is a session. Reply in it to steer, answer or redirect; you need not mention Hum again.
 - Anyone in the channel can reply, member or guest. The words reach the model as written; who said them is on the record.
 - A new mention at the channel's top level is a new session in a new thread, on the same repository.
-- The session runs on Metaphi's Modal, on a workspace kept for that channel and repository, so a reply after the sandbox has gone rebuilds it and the work continues.
+- The session runs in the cloud, on a workspace kept for that channel and repository, so a reply after the sandbox has gone rebuilds it and the work continues.
 
 ## Direct messages
 
@@ -48,9 +47,9 @@ A direct message to Hum is personal work on your own account, not the channel's.
 
 ## For admins
 
-- **Channels for everyone.** The deployment can name channels every session may post in (`HUM_COMMS_JSON`), beside the ones a repository declares in `.hum/comms.json`.
+- **Channels a repository posts in.** A repository names the channels its sessions may post in, in `.hum/comms.json`.
 - **Limits.** Usage is counted per organization. No limit is set by default; an admin may set a monthly limit and an alert, and work over the limit is declined with a sentence that says whom to ask.
-- **Removing the app.** Uninstall it from Slack's app settings, or revoke its token: the workspace's token, people, codes, channels and repository bindings are deleted at once. Session records stay.
+- **Removing the app.** Uninstall it from Slack's app settings, or revoke its token: the workspace's token, people, codes, channels and repository bindings are deleted at once.
 - **What it reads and stores.** [metaphi.ai/security](https://metaphi.ai/security).
 
 ## Troubleshooting
