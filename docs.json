@@ -105,12 +105,6 @@
             ]
           },
           {
-            "group": "Traces",
-            "pages": [
-              "taskforge/twin"
-            ]
-          },
-          {
             "group": "Reference",
             "pages": [
               "taskforge/reference"
@@ -169,8 +163,12 @@
       "destination": "/overview"
     },
     {
+      "source": "/taskforge/twin",
+      "destination": "/api/overview"
+    },
+    {
       "source": "/taskforge/anonymize",
-      "destination": "/taskforge/twin"
+      "destination": "/api/overview"
     }
   ],
   "seo": {

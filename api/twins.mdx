@@ -25,7 +25,7 @@ description: "The twin object, and creating, retrieving, listing and downloading
 | `status` | string | `queued`, `running`, `completed` or `failed` |
 | `created` | integer | Unix seconds |
 | `completed` | integer or null | Unix seconds when it ended, whether it completed or failed |
-| `filename` | string or null | The uploaded file's name; `null` once the download window has ended |
+| `filename` | string or null | The uploaded file's name, or `null` |
 | `error` | object or null | Why it failed: `{type, code, message, retryable}`. See [run failures](/api/errors#run-failures) |
 | `livemode` | boolean | `false` for a test-mode twin |
 
@@ -38,8 +38,8 @@ For a failed twin, `retryable` says whether uploading the same trace again may s
 | Field | Required | Description |
 | --- | --- | --- |
 | `file` | yes | The trace: JSON, JSON Lines or text. At most 50 MiB (256 KiB in test mode). Its name may use letters, digits, `.`, `-` and `_`, as `trace.jsonl` |
-| `key` | no | 64 hex characters that key the synthetic values. The same key gives one person the same synthetic value in every trace of a corpus. If you leave it out, each trace gets a fresh key. Keep the key yourself: it is not stored |
-| `confidential` | no | An organisation to treat as confidential although it is public, such as your client. It is replaced, along with everything that names it. Repeat the field once per organisation, at most 50, each at most 200 characters |
+| `key` | no | 64 hex characters. Send the same key on every trace of a corpus to keep its synthetic values consistent across them |
+| `confidential` | no | An organisation to treat as confidential although it is public, such as your client. Repeat the field once per organisation, at most 50, each at most 200 characters |
 
 Send an [`Idempotency-Key`](/api/idempotency) header so a retried request never starts a second run.
 
@@ -90,10 +90,4 @@ The `Content-Type` follows the uploaded file's extension:
 | 200 | | The file |
 | 409 | `twin_not_completed` | Still `queued` or `running`; retry later |
 | 409 | `twin_failed` | The twin failed and has no content |
-| 410 | `content_expired` | More than 7 days since it completed; past its download window |
-
-## What is kept
-
-- The twin's content can be downloaded for 7 days after it completes, and only your organization's keys reach it in the mode that made it. The uploaded file's name is dropped when that window ends.
-- The table of what became what is neither returned nor stored.
-- Data retention is set per organization under your agreement with Metaphi.
+| 410 | `content_expired` | Past its download window |
