@@ -11,7 +11,7 @@ A reward says whether the verifier passed. Post-run checks ask whether it was ea
 harbor_rollouts {"repo": "acme/tasks", "task": "fix-rounding"}
 ```
 
-One row per trial across the repository's eval runs: ids, model, harness, reward and the grade beside it, failure type, gateway cost, tokens, phase times, model wait against tool time, sandbox CPU and peak memory. Then the folds:
+One row per trial across the repository's eval runs: ids, model, harness, reward and the grade beside it, failure type, cost, tokens, phase times, model wait against tool time, sandbox CPU and peak memory. Then the folds:
 
 | Fold | What it says |
 | --- | --- |
@@ -27,7 +27,7 @@ Trials lost to infrastructure are left out of pass@k; the agent's own timeouts a
 
 ## Trajectory review: `review_run`
 
-A conduct run judges each trial as it finishes (`analyze`, on by default). `review_run` reviews a run, or one trial, again, with a judge you name:
+A conduct run reviews each trial as it finishes (`analyze`, on by default). `review_run` reviews a run, or one trial, again, with a model you name:
 
 ```json
 review_run {"repo": "acme/tasks", "run_path": "fix-rounding/eval/<run id>/<model slug>"}
@@ -54,7 +54,7 @@ submit_adjudication {"repo": "acme/tasks",
                      "adjudication": {"reward_hacking": "none", "reason": "the agent fixed the rounding at its source"}}
 ```
 
-It is filed under your name in `review/adjudications/`, appended to `review/timeline.json`, and set as `review/latest.json`. It returns a `suggestion_id`. `resolve_suggestion` marks it `accepted`, `rejected` or `open` with a note; `list_adjudications` shows the history.
+It is filed under your name and returns a `suggestion_id`. `resolve_suggestion` marks it `accepted`, `rejected` or `open` with a note; `list_adjudications` shows the history.
 
 ## Then decide
 

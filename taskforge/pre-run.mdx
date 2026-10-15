@@ -13,27 +13,19 @@ Run it on a complete draft (instruction, Dockerfile, code, `test.sh`, `solve.sh`
 run_task_ci_checks {"repo": "acme/tasks", "ref": "main", "path": "tasks/fix-rounding"}
 ```
 
-Stop when the report's `eval_ready` is true. The report lands at `<task>/ci/<run id>/report.json`. Several bundles at once: pass `paths`; each runs in a container of its own under one run id.
+Stop when the report's `eval_ready` is true. The report lands at `<task>/ci/<run id>/report.json`. Several bundles at once: pass `paths`; they share one run id.
 
-Three stages, cheapest first:
-
-| Stage | Checks | Decides `eval_ready` |
-| --- | --- | --- |
-| Screen | `harbor_config`, `agent_network`, `solve_sh_runnable`, `test_setup_runnable`, `instruction_leakage`, `instruction_private_details` | No, but a failure holds every sandbox back |
-| | `harbor_structure`, `dockerfile_sanity`, `solution_format`, `test_file_references` | Advisory |
-| Audits | `task_reference`, `task_eval_signal`, `instruction_flags`, `test_not_fragile`, `test_data_driven`, `test_quality` | Never: recorded as advice in `gate.advisory_failed` |
-| Validate | `bundle_shape`, `bundle_private_details` (read off the files) | Yes |
-| | The sandboxed checks below, run only where the screen passed | Yes |
+The report names every check it ran and what to fix. Screen checks on the bundle's structure, configuration and instruction run first; a screen failure holds the sandboxed checks back. Advisory audits are recorded in `gate.advisory_failed` and never decide `eval_ready`. These sandboxed checks decide it:
 
 | Check | Proves |
 | --- | --- |
 | `oracle` | The reference solution scores 1.0 |
 | `null_arm` | The untouched codebase scores below 1.0 |
 | `probe_cheat` | A non-solving `solve.sh` scores below 1.0 |
-| `solutions` | Every wrong solution in `wrong/` scores below 1.0 and every right solution in `right/` scores 1.0, both in the problem directory ([where](#wrong-and-right-solutions)). One sandbox per solution |
+| `solutions` | Every wrong solution in `wrong/` scores below 1.0 and every right solution in `right/` scores 1.0, both in the problem directory ([where](#wrong-and-right-solutions)) |
 | `cases` | Where the verifier reports per case: no case passes on the untouched code and fails with the reference applied |
 
-What the newer checks ask:
+Checks that commonly fail, and how to fix them:
 
 | Check | Fails when |
 | --- | --- |
@@ -77,7 +69,7 @@ Two formats, the same for both kinds:
 
 The working directory is the one Harbor runs the reference in: `[environment] workdir`, else the Dockerfile's `WORKDIR`. A task whose agent writes an answer rather than changing code uses an overlay holding that answer, for example `wrong/sign-flipped/answer.json` where the working directory is `/workspace` and the verifier reads `/workspace/answer.json`.
 
-Each solution replaces the reference in a copy of the bundle and runs through Harbor's oracle agent and the bundle's own verifier, in a sandbox of its own. A wrong solution passes when a case rejects it (with no per-case report, when the reward is below 1.0). A right solution passes at 1.0.
+Each solution replaces the reference in a copy of the bundle and runs through Harbor's oracle agent and the bundle's own verifier. A wrong solution passes when a case rejects it (with no per-case report, when the reward is below 1.0). A right solution passes at 1.0.
 
 At least one wrong solution is required. Right solutions are optional (the reference is the one the `oracle` check measures), but each one offered must score 1.0. A wrong solution that survives means a case is missing: add the case. A right solution that fails means a case grades the shape of the code.
 

@@ -48,7 +48,7 @@ run_harbor_tasks {"repo": "acme/tasks", "ref": "main", "paths": ["tasks/fix-roun
                   "harness": "terminus-2", "k": 8, "reasoning_effort": "medium"}
 ```
 
-Eight trials, each judged as it finishes. `reasoning_effort` is required; Kennet has no default. The task's progress counts calls by phase while it works. The run lands at `fix-rounding/eval/<run id>/<model slug>/`.
+Eight trials, each reviewed as it finishes. `reasoning_effort` is required; Kennet has no default. The task's progress counts calls by phase while it works. The run lands at `fix-rounding/eval/<run id>/<model slug>/`.
 
 ## 6. Read the run
 
@@ -57,7 +57,7 @@ harbor_rollouts   {"repo": "acme/tasks", "task": "fix-rounding"}
 harbor_run_report {"repo": "acme/tasks", "run_id": "<run id>"}
 ```
 
-`harbor_rollouts` gives one row per trial (reward, failure type, cost, tokens, phase times) and per task the pass@k and its band. `harbor_run_report` lists one run's trials and files; name a `trial` for its judged report.
+`harbor_rollouts` gives one row per trial (reward, failure type, cost, tokens, phase times) and per task the pass@k and its band. `harbor_run_report` lists one run's trials and files; name a `trial` for its review report.
 
 ## 7. Review the trajectories
 

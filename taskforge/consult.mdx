@@ -16,11 +16,11 @@ answer_task {"task_id": "<task id>", "answers": {"q-…": "Round half to even; t
 
 A client that speaks MCP Tasks puts the questions to you directly and answers with `tasks/update`. Any client can call `answer_task`.
 
-The session waits up to ten minutes for an answer, then withdraws the question and goes on without it. Every question and what came back is kept with the session at `agent-sessions/<session id>/`. The session's debrief comes back in its result, not as a question.
+The session waits up to ten minutes for an answer, then withdraws the question and goes on without it. The session's debrief comes back in its result, not as a question.
 
 ## Experts on Slack: `ask_human`
 
-For teams that run an expert channel. Opens one question in a Slack thread and returns its id at once. A reply agent owns the thread to its close and banks each answer where the asking pass reads it.
+For teams that run an expert channel. Opens one question in a Slack thread and returns its id at once. Answers are recorded under the task named by `repo` and `task`.
 
 ```json
 ask_human {"kind": "question",
@@ -36,12 +36,12 @@ ask_human {"kind": "question",
 | `questions` | Questions to post verbatim, each with the test assertion its answer decides |
 | `repo`, `task` | Bank answers under `<task>/sme/` on the repository's runs |
 | `attachments` | Run directories packed into a redacted review bundle |
-| `channel` | Never guessed |
+| `channel` | The Slack channel id. Required; never guessed |
 
 `ask_human` with `questions: "open"` opens one consult from a task's open yes/no questions (`<task>/sme/questions.json`), skipping answered ones. `list_consults` lists yours, or reads one thread whole by `consult_id`. Only you read your consults.
 
 ## Parked passes
 
-When the model API turns a pass away, it parks with what it spent. `list_parked` shows yours; `resume_parked` respawns them once the API answers. A sweep does the same every fifteen minutes.
+When the model API turns a pass away, it parks with what it spent. `list_parked` shows yours; `resume_parked` respawns them once the API answers. Kennet also resumes them on its own.
 
 The Slack tools and parked passes are on `kennet:l3`.

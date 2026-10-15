@@ -16,21 +16,21 @@ run_harbor_tasks {"repo": "acme/tasks", "ref": "main",
 
 | Argument | Meaning |
 | --- | --- |
-| `models` | Catalog ids from the model gateway. The ones your tier may run are this field's enum |
+| `models` | Catalog model ids. The ones your tier may run are this field's enum |
 | `harness` | The agent the model runs under. Default `terminus-2` |
 | `k` | Trials per task and model |
 | `reasoning_effort` | Required. Passed verbatim to the harness's own setting; Kennet has no default |
 | `max_output_tokens` | The output limit per model call. 0 keeps the harness default, recorded as such |
-| `analyze` | Judge each trial as it finishes. Default true |
+| `analyze` | Review each trial's trajectory as it finishes. Default true |
 | `max_attempts` | Re-runs of a trial that failed on infrastructure. Default 3 |
 
-One container runs per task and model; each trial gets its own sandbox. Every run records the repository and the commit it ran at.
+Every run records the repository and the commit it ran at.
 
 ## Models and cost
 
-Every model call a trial makes goes through the Nunatak gateway. The sandbox holds a short-lived token for one model and one trial, never a provider key. Before the run fans out, Kennet checks the gateway once and probes each model; a model it cannot serve refuses the launch before any trial starts.
+A model that cannot be served refuses the launch before any trial starts, and nothing is spent.
 
-`google/gemini-3.8-flash` under `terminus-2` is the default when a run names no model; it runs on Vertex and is the model to start a task on. `harbor_rollouts` reports each trial's gateway cost and the cost per solve per model and harness.
+`google/gemini-3.8-flash` under `terminus-2` is the default when a run names no model. `harbor_rollouts` reports each trial's cost and the cost per solve per model and harness.
 
 ## What lands where
 
@@ -50,17 +50,17 @@ Each trial ends as one of these, read from what Harbor recorded at the source. T
 | `agent_context` | The agent overran its context window, and no verifier ran | 0 |
 | `agent_timeout` | The agent spent its time budget, and no verifier ran | 0 |
 | `infra_error` | Sandbox, image, network or provider failure | not counted |
-| `upstream_error` | The model call failed after the gateway's retries | not counted |
+| `upstream_error` | The model call failed after retries | not counted |
 | `ungradable` | The verifier could not grade: a bundle or image defect | not counted |
 | `missing_result` | No reward and no recognised cause | not counted |
 
 Infrastructure is never scored as the model's 0. It is counted beside the score, and retryable outcomes run again up to `max_attempts`.
 
-When a failure would hit every call alike (the gateway down, credits out), the launch stops the calls not yet rolling out and marks them `stopped`. The task's result names the failure and carries `rerun`: the one call that runs exactly the stopped work again.
+When a failure would hit every call alike (the model service down, credits out), the launch stops the calls not yet rolling out and marks them `stopped`. The task's result names the failure and carries `rerun`: the one call that runs exactly the stopped work again.
 
 ## Calibrate: `calibrate_task`
 
-One measure cycle on one task, named by `repo` + `ref` + `path`, under `models` at `reasoning_effort`: taskforge's calibrate session validates the bundle, runs it at k and writes `CALIBRATION_REPORT.md` with one recommended next edit (`difficulty_target` defaults to a mean reward of 0.3). Then it stops. Everything lands at `<task>/calibrate/<run id>/`: the edited bundle at `harbor/` with the report inside it, the measures at `runs/`, the session's record at `calibrate_result.json`. The finished task links the record and the report. You make the edit and call again. On `kennet:l3` today.
+One measure cycle on one task, named by `repo` + `ref` + `path`, under `models` at `reasoning_effort`: it validates the bundle, runs it at k and writes `CALIBRATION_REPORT.md` with one recommended next edit (`difficulty_target` defaults to a mean reward of 0.3). Then it stops. Everything lands at `<task>/calibrate/<run id>/`: the edited bundle at `harbor/` with the report inside it, the measures at `runs/`, the record at `calibrate_result.json`. The finished task links the record and the report. You make the edit and call again. On `kennet:l3` today.
 
 ## Follow and stop
 

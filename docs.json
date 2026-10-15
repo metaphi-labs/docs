@@ -68,8 +68,7 @@
               "sub-agents",
               "skills",
               "hooks",
-              "unattended",
-              "personas"
+              "unattended"
             ]
           },
           {
@@ -90,7 +89,6 @@
             "group": "Getting started",
             "pages": [
               "taskforge/overview",
-              "taskforge/architecture",
               "taskforge/quickstart"
             ]
           },
@@ -169,6 +167,14 @@
     {
       "source": "/taskforge/anonymize",
       "destination": "/api/overview"
+    },
+    {
+      "source": "/personas",
+      "destination": "/overview"
+    },
+    {
+      "source": "/taskforge/architecture",
+      "destination": "/taskforge/overview"
     }
   ],
   "seo": {
